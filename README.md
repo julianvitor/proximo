@@ -1,10 +1,10 @@
-# Empilha
+# Proximo
 
-Empilha é um projeto composto por dois softwares: ALi para dispositivos Android e o firmware para hardware baseado no WT32, projetados para controle de acesso com gatilho de trava.
+Proximo é um projeto composto por dois softwares: ALi para dispositivos Android e o firmware para hardware baseado no WT32, projetados para controle de acesso com gatilho de trava.
 
 ## Descrição
 
-O Empilha oferece uma solução de controle de acesso simples e fácil de usar, permitindo que os usuários interajam com dispositivos de gatilho de trava de forma conveniente e segura. O software ALi é projetado para funcionar em dispositivos Android, proporcionando uma interface intuitiva para os usuários finais. O firmware para hardware baseado no WT32 permite a integração com sistemas de segurança física.
+O Proximo oferece uma solução de controle de acesso simples e fácil de usar, permitindo que os usuários interajam com dispositivos de gatilho de trava de forma conveniente e segura. O software ALi é projetado para funcionar em dispositivos Android, proporcionando uma interface intuitiva para os usuários finais. O firmware para hardware baseado no WT32 permite a integração com sistemas de segurança física.
 
 ## Funcionalidades
 
@@ -27,7 +27,7 @@ O Empilha oferece uma solução de controle de acesso simples e fácil de usar, 
 
 ## Autores
 
-O Empilha é mantido por [Julian Vitor Ambrozio Carreiro].
+O Proximo é mantido por [Julian Vitor Ambrozio Carreiro].
 
 ## Licença
 
