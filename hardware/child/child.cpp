@@ -1,5 +1,4 @@
 #include <Arduino.h>
-#include <ETH.h>
 #include <WiFi.h>
 #include <PN532_I2C.h>
 #include <PN532.h>
@@ -13,13 +12,17 @@
 #define I2C_SCL 32
 #define I2C_SDA 33
 
-// Ethernet
-#define ETH_ADDR        1
-#define ETH_POWER_PIN_ALTERNATIVE 16
-#define ETH_MDC_PIN    23
-#define ETH_MDIO_PIN   18
-#define ETH_TYPE       ETH_PHY_LAN8720
+
+//ethernet
+#ifndef ETH_PHY_TYPE
+#define ETH_PHY_TYPE  ETH_PHY_LAN8720
+#define ETH_PHY_ADDR  0
+#define ETH_PHY_MDC   23
+#define ETH_PHY_MDIO  18
+#define ETH_PHY_POWER 16
 #define ETH_CLK_MODE   ETH_CLOCK_GPIO17_OUT
+#endif
+#include <ETH.h>
 
 unsigned long previousMillis = 0;
 const long interval = 5000;
@@ -43,14 +46,14 @@ unsigned long tempoInicioAtivacao = 0;
 
 void WiFiEvent(WiFiEvent_t event) {
   switch (event) {
-    case SYSTEM_EVENT_ETH_START:
+    case ARDUINO_EVENT_ETH_START:
       //Serial.println("ETH Started");
       ETH.setHostname("esp32-ethernet"); // Set ETH hostname
       break;
-    case SYSTEM_EVENT_ETH_CONNECTED:
+    case ARDUINO_EVENT_ETH_CONNECTED:
       //Serial.println("ETH Connected");
       break;
-    case SYSTEM_EVENT_ETH_GOT_IP:
+    case ARDUINO_EVENT_ETH_GOT_IP:
       //Serial.print("ETH MAC: ");
       //Serial.print(ETH.macAddress());
       //Serial.print(", IPv4: ");
@@ -63,11 +66,11 @@ void WiFiEvent(WiFiEvent_t event) {
       //Serial.println("Mbps");
       eth_connected = true;
       break;
-    case SYSTEM_EVENT_ETH_DISCONNECTED:
+    case ARDUINO_EVENT_ETH_DISCONNECTED:
       //Serial.println("ETH Disconnected");
       eth_connected = false;
       break;
-    case SYSTEM_EVENT_ETH_STOP:
+    case ARDUINO_EVENT_ETH_STOP:
       //Serial.println("ETH Stopped");
       eth_connected = false;
       break;
@@ -92,7 +95,6 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
         break;
     }
   }
-
 
 void readRFID() {
   // Verifica se há um cartão RFID
@@ -135,6 +137,7 @@ void readRFID() {
   }
 }
 
+
 void acionarRele(int pin) {
   digitalWrite(pin, LOW);
   releAtivo = true;
@@ -144,7 +147,7 @@ void acionarRele(int pin) {
 void setup() {
   pinMode(RELE_PIN, OUTPUT);
   pinMode(RELE_PIN2, OUTPUT);
-  pinMode(ETH_POWER_PIN_ALTERNATIVE, OUTPUT);
+  pinMode(ETH_PHY_POWER, OUTPUT);
 
   digitalWrite(RELE_PIN, LOW);
   digitalWrite(RELE_PIN2, LOW);
@@ -152,7 +155,7 @@ void setup() {
   digitalWrite(RELE_PIN, HIGH);
   digitalWrite(RELE_PIN2, HIGH);
 
-  digitalWrite(ETH_POWER_PIN_ALTERNATIVE, HIGH);
+  digitalWrite(ETH_PHY_POWER, HIGH);
 
   //Serial.begin(115200);
   
@@ -172,7 +175,7 @@ void setup() {
   btStop();
   
   WiFi.onEvent(WiFiEvent);
-  ETH.begin(ETH_ADDR,ETH_POWER_PIN_ALTERNATIVE, ETH_MDC_PIN, ETH_MDIO_PIN, ETH_TYPE, ETH_CLK_MODE);
+  ETH.begin();
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
 }
@@ -180,7 +183,7 @@ void setup() {
 void loop() {
   if (!eth_connected) {
     // Se não estiver conectado, tenta inicializar a conexão Ethernet novamente
-    ETH.begin(ETH_ADDR, ETH_POWER_PIN_ALTERNATIVE, ETH_MDC_PIN, ETH_MDIO_PIN, ETH_TYPE, ETH_CLK_MODE);
+    ETH.begin();
   }
   
   // Executa o loop do WebSocketsServer
