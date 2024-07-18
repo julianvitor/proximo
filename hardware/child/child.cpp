@@ -118,28 +118,14 @@ void lerRfid() {
   
   if (success) {
     // Se um cartão foi encontrado, converte o UID para uma string
-    currentUID = "";
+    String uidString = "";
     for (uint8_t i = 0; i < uidLength; i++) {
-      if (uid[i] < 0x10) currentUID += "0"; // Adiciona um zero à esquerda se necessário
-      currentUID += String(uid[i], HEX);
+      if (uid[i] < 0x10) uidString += "0"; // Adiciona um zero à esquerda se necessário
+      uidString += String(uid[i], HEX);
     }
 
-    // Verifica se o UID atual é diferente do UID anterior ou se é a primeira leitura
-    if (currentUID != lastUID || lastUID == "") {
-      // Envia o UID para todos os clientes conectados via WebSocket
-      webSocket.broadcastTXT("inserido:" + currentUID);
-
-      // Atualiza o último UID lido
-      lastUID = currentUID;
-    }
-  } else {
-    // Se não foi encontrado um cartão RFID, verifica se o último UID lido foi diferente de vazio
-    if (lastUID != "") {
-      // Envia uma mensagem indicando que o cartão foi removido para todos os clientes conectados via WebSocket
-      webSocket.broadcastTXT("removido:" + lastUID);
-      // Limpa o último UID lido
-      lastUID = "";
-    }
+    // Envia o UID para todos os clientes conectados via WebSocket
+    webSocket.broadcastTXT("UID:" + uidString);
   }
 }
 
@@ -153,7 +139,7 @@ void desativarRele(int pin){
     releAtivo = false;
 }
 
-TickTwo timerLerRfid(lerRfid, 1000, 0, MILLIS);
+TickTwo timerLerRfid(lerRfid, 5000, 0, MILLIS);
 
 void setup() {
   pinMode(RELE_PIN, OUTPUT);
@@ -161,7 +147,7 @@ void setup() {
 
   digitalWrite(RELE_PIN, LOW);
   digitalWrite(RELE_PIN2, LOW);
-  delay(2000);
+  delay(3000);
   digitalWrite(RELE_PIN, HIGH);
   digitalWrite(RELE_PIN2, HIGH);
   
@@ -179,19 +165,20 @@ void setup() {
   ETH.begin(ETH_ADDR,ETH_POWER_PIN, ETH_MDC_PIN, ETH_MDIO_PIN, ETH_TYPE, ETH_CLK_MODE);
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
+
+  // Iniciar a task do rfid
+  timerLerRfid.start();
+
 }
 
 void loop() {
-    if (!eth_connected) {
+  timerLerRfid.update();
+  
+  if (!eth_connected) {
     // Se não estiver conectado, tenta inicializar a conexão Ethernet novamente
     ETH.begin(ETH_ADDR, ETH_POWER_PIN, ETH_MDC_PIN, ETH_MDIO_PIN, ETH_TYPE, ETH_CLK_MODE);
   }
-   
-    // Executa o loop do WebSocketsServer
-    webSocket.loop();
 
-    // Leitura constante de rfid
-    timerLerRfid.start();
-    
-
+  // Executa o loop do WebSocketsServer
+  webSocket.loop();
 }
