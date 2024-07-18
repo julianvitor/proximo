@@ -116,6 +116,11 @@ void setup() {
 
   digitalWrite(ETH_POWER_PIN_ALTERNATIVE, HIGH);
 
+  WiFi.onEvent(WiFiEvent);
+  ETH.begin(ETH_ADDR, ETH_POWER_PIN_ALTERNATIVE, ETH_MDC_PIN, ETH_MDIO_PIN, ETH_TYPE, ETH_CLK_MODE);
+  webSocket.begin();
+  webSocket.onEvent(webSocketEvent);
+
   Wire.begin(I2C_SDA, I2C_SCL);
   nfc.begin();
   
@@ -130,10 +135,7 @@ void setup() {
   
   btStop();
   
-  WiFi.onEvent(WiFiEvent);
-  ETH.begin(ETH_ADDR, ETH_POWER_PIN_ALTERNATIVE, ETH_MDC_PIN, ETH_MDIO_PIN, ETH_TYPE, ETH_CLK_MODE);
-  webSocket.begin();
-  webSocket.onEvent(webSocketEvent);
+
 }
 
 void loop() {
