@@ -1,11 +1,11 @@
 #include <Arduino.h>
 #include <ETH.h>
-#include <WiFi.h>
-#include <Wire.h>
-#include <Adafruit_PN532.h>
 #include <WebSocketsServer.h>
+#include <PN532_I2C.h>
+#include <PN532.h>
+#include "TickTwo.h"
 
-// Pinos dos Relés e RFID
+// Reles e RFID
 #define RELE_PIN 2
 #define RELE_PIN2 4
 
@@ -14,20 +14,33 @@
 #define I2C_SDA 33
 
 // Ethernet
+/* 
+   * ETH_CLOCK_GPIO0_IN   - default: external clock from crystal oscillator
+   * ETH_CLOCK_GPIO0_OUT  - 50MHz clock from internal APLL output on GPIO0 - possibly an inverter is needed for LAN8720
+   * ETH_CLOCK_GPIO16_OUT - 50MHz clock from internal APLL output on GPIO16 - possibly an inverter is needed for LAN8720
+   * ETH_CLOCK_GPIO17_OUT - 50MHz clock from internal APLL inverted output on GPIO17 - tested with LAN8720
+*/
+#define ETH_CLK_MODE    ETH_CLOCK_GPIO0_IN
+
+// Pin# of the enable signal for the external crystal oscillator (-1 to disable for internal APLL source)
+#define ETH_POWER_PIN  16
+
+// Type of the Ethernet PHY (LAN8720 or TLK110)
+#define ETH_TYPE        ETH_PHY_LAN8720
+
+// I²C-address of Ethernet PHY (0 or 1 for LAN8720, 31 for TLK110)
 #define ETH_ADDR        1
-#define ETH_POWER_PIN_ALTERNATIVE 16
-#define ETH_MDC_PIN    23
-#define ETH_MDIO_PIN   18
-#define ETH_TYPE       ETH_PHY_LAN8720
-#define ETH_CLK_MODE   ETH_CLOCK_GPIO17_OUT
 
-unsigned long previousMillis = 0;
-const long interval = 5000;
-const long releDuration = 20000; // Tempo de ativação do relé em milissegundos
+// Pin# of the I²C clock signal for the Ethernet PHY
+#define ETH_MDC_PIN     23
 
-Adafruit_PN532 nfc(I2C_SDA, I2C_SCL);
+// Pin# of the I²C IO signal for the Ethernet PHY
+#define ETH_MDIO_PIN    18
 
-WebSocketsServer webSocket = WebSocketsServer(81);
+PN532_I2C pn532_i2c(Wire);
+PN532 nfc(pn532_i2c);
+
+WebSocketsServer webSocket = WebSocketsServer(81); // WebSocket server on port 81
 
 static bool eth_connected = false;
 
@@ -35,16 +48,17 @@ String lastUID = "";
 String currentUID = "";
 
 bool releAtivo = false;
-unsigned long tempoInicioAtivacao = 0;
 
 void WiFiEvent(WiFiEvent_t event) {
   switch (event) {
     case SYSTEM_EVENT_ETH_START:
-      ETH.setHostname("esp32-ethernet"); // Define o hostname da ETH
+      ETH.setHostname("esp32-ethernet"); // Set ETH hostname
       break;
     case SYSTEM_EVENT_ETH_CONNECTED:
       break;
     case SYSTEM_EVENT_ETH_GOT_IP:
+      if (ETH.fullDuplex()) {
+      }
       eth_connected = true;
       break;
     case SYSTEM_EVENT_ETH_DISCONNECTED:
@@ -59,101 +73,125 @@ void WiFiEvent(WiFiEvent_t event) {
 }
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
-  switch(type) {
-    case WStype_TEXT:
-      webSocket.sendTXT(num, payload);
-      if (strcmp((char*)payload, "ativar 1") == 0) {
-        acionarRele(RELE_PIN);
-      } else if (strcmp((char*)payload, "ativar 2") == 0) {
-        acionarRele(RELE_PIN2);
-      }
-      break;
-    default:
-      break;
-  }
-}
+    switch(type) {
+      case WStype_TEXT:
+        if (strcmp((char*)payload, "ativar 1") == 0){
+          acionarRele(RELE_PIN);
+        } 
+        else if (strcmp((char*)payload, "ativar 2") == 0){
+          acionarRele(RELE_PIN2);
+        }
+        // verificar se o cliente quer o firmware
+        else if (strcmp((char*)payload, "firmware") == 0){
+            
+          // Verificar se o pn532 foi detectado
+          uint32_t versiondata = nfc.getFirmwareVersion();  
 
-void readRFID() {
+          if (versiondata){
+            String firmware = "PN532 Firmware version: ";
+            firmware += String(versiondata);
+
+            // Enviar versão do firmware para o cliente
+            webSocket.sendTXT(num, firmware);
+          } 
+          else{
+            // PN532 não econtrado, enviar mensagme de erro
+            webSocket.sendTXT(num, "Erro: PN532 não encontrado");
+          }
+        }
+        // Echo message back to client
+        webSocket.sendTXT(num, payload, length); 
+        break;
+      default:
+        break;
+    }
+  }
+
+void lerRfid() {
+  // Verifica se há um cartão RFID
   uint8_t success;
-  uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer para armazenar o UID lido
+  uint8_t uid[7] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer para armazenar o UID lido
   uint8_t uidLength;                        // Comprimento do UID (4 ou 7 bytes dependendo do tipo de cartão)
+  
+  // Tenta ler um cartão RFID
   success = nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength, 100);
   
   if (success) {
+    // Se um cartão foi encontrado, converte o UID para uma string
     currentUID = "";
     for (uint8_t i = 0; i < uidLength; i++) {
+      if (uid[i] < 0x10) currentUID += "0"; // Adiciona um zero à esquerda se necessário
       currentUID += String(uid[i], HEX);
     }
 
+    // Verifica se o UID atual é diferente do UID anterior ou se é a primeira leitura
     if (currentUID != lastUID || lastUID == "") {
+      // Envia o UID para todos os clientes conectados via WebSocket
       webSocket.broadcastTXT("inserido:" + currentUID);
+
+      // Atualiza o último UID lido
       lastUID = currentUID;
     }
   } else {
+    // Se não foi encontrado um cartão RFID, verifica se o último UID lido foi diferente de vazio
     if (lastUID != "") {
+      // Envia uma mensagem indicando que o cartão foi removido para todos os clientes conectados via WebSocket
       webSocket.broadcastTXT("removido:" + lastUID);
+      // Limpa o último UID lido
       lastUID = "";
     }
   }
 }
 
 void acionarRele(int pin) {
-  digitalWrite(pin, LOW);
-  releAtivo = true;
-  tempoInicioAtivacao = millis(); // Salva o tempo de início da ativação
+    digitalWrite(pin, LOW);
+    releAtivo = true;
 }
+
+void desativarRele(int pin){
+    digitalWrite(pin, HIGH);
+    releAtivo = false;
+}
+
+TickTwo timerLerRfid(lerRfid, 1000, 0, MILLIS);
 
 void setup() {
   pinMode(RELE_PIN, OUTPUT);
   pinMode(RELE_PIN2, OUTPUT);
-  pinMode(ETH_POWER_PIN_ALTERNATIVE, OUTPUT);
 
   digitalWrite(RELE_PIN, LOW);
   digitalWrite(RELE_PIN2, LOW);
   delay(2000);
   digitalWrite(RELE_PIN, HIGH);
   digitalWrite(RELE_PIN2, HIGH);
-
-  digitalWrite(ETH_POWER_PIN_ALTERNATIVE, HIGH);
-
-  WiFi.onEvent(WiFiEvent);
-  ETH.begin(ETH_ADDR, ETH_POWER_PIN_ALTERNATIVE, ETH_MDC_PIN, ETH_MDIO_PIN, ETH_TYPE, ETH_CLK_MODE);
-  webSocket.begin();
-  webSocket.onEvent(webSocketEvent);
-
+  
   Wire.begin(I2C_SDA, I2C_SCL);
   nfc.begin();
-  
+
   uint32_t versiondata = nfc.getFirmwareVersion();
   if (!versiondata) {
-    //Serial.println("Não foi possível encontrar o PN53x. Certifique-se de que está conectado corretamente.");
   } else {
     nfc.SAMConfig();
-    //Serial.println("ESP32 PN532 Iniciado!");
-    //Serial.println(versiondata);
   }
-  
   btStop();
   
-
+  WiFi.onEvent(WiFiEvent);
+  ETH.begin(ETH_ADDR,ETH_POWER_PIN, ETH_MDC_PIN, ETH_MDIO_PIN, ETH_TYPE, ETH_CLK_MODE);
+  webSocket.begin();
+  webSocket.onEvent(webSocketEvent);
 }
 
 void loop() {
-  if (!eth_connected) {
-    ETH.begin(ETH_ADDR, ETH_POWER_PIN_ALTERNATIVE, ETH_MDC_PIN, ETH_MDIO_PIN, ETH_TYPE, ETH_CLK_MODE);
+    if (!eth_connected) {
+    // Se não estiver conectado, tenta inicializar a conexão Ethernet novamente
+    ETH.begin(ETH_ADDR, ETH_POWER_PIN, ETH_MDC_PIN, ETH_MDIO_PIN, ETH_TYPE, ETH_CLK_MODE);
   }
-  
-  webSocket.loop();
-  
-  unsigned long currentMillis = millis();
-  if (currentMillis - previousMillis >= interval) {
-    previousMillis = currentMillis;
-    readRFID();
-  }
+   
+    // Executa o loop do WebSocketsServer
+    webSocket.loop();
 
-  if (releAtivo && (currentMillis - tempoInicioAtivacao >= releDuration)) {
-    digitalWrite(RELE_PIN, HIGH);
-    digitalWrite(RELE_PIN2, HIGH);
-    releAtivo = false;
-  }
+    // Leitura constante de rfid
+    timerLerRfid.start();
+    
+
 }
