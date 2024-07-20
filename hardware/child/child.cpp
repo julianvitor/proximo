@@ -39,9 +39,8 @@ bool rele2Ativo = false;
 // Duração do rele ativado em milissegundos
 int DURACAO_RELE = 20000;
 
-String lastUID = "";
-String currentUID = "";
-
+String uidAnterior = "";
+String uidAtual = "";
 
 
 // Prototipos de callbacks.
@@ -52,7 +51,7 @@ void desativar_rele2_callback();
 
 // Instanciar os timers(tasks)
 TickTwo timerLerRfid(ler_rfid_callback, 6000, 0, MILLIS);
-TickTwo timerGerenciarErros(gerenciar_erros_callback, 500, 0, MILLIS);
+TickTwo timerGerenciarErros(gerenciar_erros_callback, 2000, 0, MILLIS);
 TickTwo timerDesativarRele1(desativar_rele1_callback, DURACAO_RELE, 1, MILLIS);
 TickTwo timerDesativarRele2(desativar_rele2_callback, DURACAO_RELE, 1, MILLIS);
 
@@ -124,16 +123,26 @@ void ler_rfid_callback() {
   // Tenta ler um cartão RFID
   success = nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength, 100);
   
+  // Se um cartão foi encontrado, converte o UID para uma string
   if (success) {
-    // Se um cartão foi encontrado, converte o UID para uma string
-    String uidString = "";
+    uidAtual = "";
     for (uint8_t i = 0; i < uidLength; i++) {
-      if (uid[i] < 0x10) uidString += "0"; // Adiciona um zero à esquerda se necessário
-      uidString += String(uid[i], HEX);
+      if (uid[i] < 0x10) uidAtual += "0"; // Adiciona um zero à esquerda se necessário
+      uidAtual += String(uid[i], HEX);
     }
 
-    // Envia o UID para todos os clientes conectados via WebSocket
-    webSocket.broadcastTXT("UID:" + uidString);
+    //verificar se o UID mudou ou se é a primeira vez que é lido
+    if (uidAtual!= uidAnterior || uidAtual == "") {
+      uidAnterior = uidAtual;
+      webSocket.broadcastTXT("inserido:" + uidAtual);    // Envia o UID para todos os clientes conectados via WebSocket
+    }
+  }
+  // Se não foi encontrado um cartão RFID, verifica se o ultimo UID lido foi diferente de vazio
+  else {
+    if (uidAnterior!= "") {
+      webSocket.broadcastTXT("removido:" + uidAnterior); // Envia o UID para todos os clientes conectados via WebSocket
+      uidAnterior = "";
+    }
   }
 }
 
