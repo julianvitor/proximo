@@ -6,8 +6,8 @@
 #include "TickTwo.h"
 
 // Reles e RFID
-#define RELE_PIN 2
-#define RELE_PIN2 4
+#define RELE1_PIN 2
+#define RELE2_PIN 5
 
 // I2C
 #define I2C_SCL 32
@@ -21,38 +21,45 @@
    * ETH_CLOCK_GPIO17_OUT - 50MHz clock from internal APLL inverted output on GPIO17 - tested with LAN8720
 */
 #define ETH_CLK_MODE    ETH_CLOCK_GPIO0_IN
-
-// Pin# of the enable signal for the external crystal oscillator (-1 to disable for internal APLL source)
-#define ETH_POWER_PIN  16
-
-// Type of the Ethernet PHY (LAN8720 or TLK110)
-#define ETH_TYPE        ETH_PHY_LAN8720
-
-// I²C-address of Ethernet PHY (0 or 1 for LAN8720, 31 for TLK110)
-#define ETH_ADDR        1
-
-// Pin# of the I²C clock signal for the Ethernet PHY
-#define ETH_MDC_PIN     23
-
-// Pin# of the I²C IO signal for the Ethernet PHY
-#define ETH_MDIO_PIN    18
+#define ETH_POWER_PIN  16 // Pin# of the enable signal for the external crystal oscillator (-1 to disable for internal APLL source)
+#define ETH_TYPE        ETH_PHY_LAN8720 // Type of the Ethernet PHY (LAN8720 or TLK110)
+#define ETH_ADDR        1 // I²C-address of Ethernet PHY (0 or 1 for LAN8720, 31 for TLK110)
+#define ETH_MDC_PIN     23 // Pin# of the I²C clock signal for the Ethernet PHY
+#define ETH_MDIO_PIN    18 // Pin# of the I²C IO signal for the Ethernet PHY
 
 PN532_I2C pn532_i2c(Wire);
 PN532 nfc(pn532_i2c);
 
 WebSocketsServer webSocket = WebSocketsServer(81); // WebSocket server on port 81
 
-static bool eth_connected = false;
+bool eth_connected = false;
+bool rele1Ativo = false;
+bool rele2Ativo = false;
+
+// Duração do rele ativado em milissegundos
+int DURACAO_RELE = 20000;
 
 String lastUID = "";
 String currentUID = "";
 
-bool releAtivo = false;
+
+
+// Prototipos de callbacks.
+void gerenciar_erros_callback();
+void ler_rfid_callback();
+void desativar_rele1_callback();
+void desativar_rele2_callback();
+
+// Instanciar os timers(tasks)
+TickTwo timerLerRfid(ler_rfid_callback, 6000, 0, MILLIS);
+TickTwo timerGerenciarErros(gerenciar_erros_callback, 500, 0, MILLIS);
+TickTwo timerDesativarRele1(desativar_rele1_callback, DURACAO_RELE, 1, MILLIS);
+TickTwo timerDesativarRele2(desativar_rele2_callback, DURACAO_RELE, 1, MILLIS);
 
 void WiFiEvent(WiFiEvent_t event) {
   switch (event) {
     case SYSTEM_EVENT_ETH_START:
-      ETH.setHostname("esp32-ethernet"); // Set ETH hostname
+      ETH.setHostname("wt32-child"); // Definir ETH hostname
       break;
     case SYSTEM_EVENT_ETH_CONNECTED:
       break;
@@ -76,30 +83,23 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
     switch(type) {
       case WStype_TEXT:
         if (strcmp((char*)payload, "ativar 1") == 0){
-          acionarRele(RELE_PIN);
+          ativarRele();
         } 
         else if (strcmp((char*)payload, "ativar 2") == 0){
-          acionarRele(RELE_PIN2);
+          ativarRele2();
         }
-        // verificar se o cliente quer o firmware
         else if (strcmp((char*)payload, "firmware") == 0){
-            
-          // Verificar se o pn532 foi detectado
-          uint32_t versiondata = nfc.getFirmwareVersion();  
-
+          uint32_t versiondata = nfc.getFirmwareVersion();// Verificar se o pn532 foi detectado
           if (versiondata){
-            String firmware = "PN532 Firmware version: ";
+            String firmware = "PN532 Firmware: ";
             firmware += String(versiondata);
-
-            // Enviar versão do firmware para o cliente
-            webSocket.sendTXT(num, firmware);
+            webSocket.sendTXT(num, firmware);// Enviar versão do firmware para o cliente
           } 
           else{
-            // PN532 não econtrado, enviar mensagme de erro
-            webSocket.sendTXT(num, "Erro: PN532 não encontrado");
+            webSocket.sendTXT(num, "Erro: PN532 não encontrado");// PN532 não econtrado, enviar mensagme de erro
           }
         }
-        // Echo message back to client
+        // Eco das mensagens recebidas
         webSocket.sendTXT(num, payload, length); 
         break;
       default:
@@ -107,7 +107,15 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
     }
   }
 
-void lerRfid() {
+void gerenciar_erros_callback(){
+  if (!eth_connected) {
+    // Se não estiver conectado, tenta inicializar a conexão Ethernet novamente
+    ETH.begin(ETH_ADDR, ETH_POWER_PIN, ETH_MDC_PIN, ETH_MDIO_PIN, ETH_TYPE, ETH_CLK_MODE);
+  }
+
+}
+
+void ler_rfid_callback() {
   // Verifica se há um cartão RFID
   uint8_t success;
   uint8_t uid[7] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer para armazenar o UID lido
@@ -129,27 +137,40 @@ void lerRfid() {
   }
 }
 
-void acionarRele(int pin) {
-    digitalWrite(pin, LOW);
-    releAtivo = true;
+void ativarRele() {
+    digitalWrite(RELE1_PIN, LOW);
+    rele1Ativo = true;
+    timerDesativarRele1.start();
+
 }
 
-void desativarRele(int pin){
-    digitalWrite(pin, HIGH);
-    releAtivo = false;
+void ativarRele2() {
+    digitalWrite(RELE2_PIN, LOW);
+    rele2Ativo = true;
+    timerDesativarRele2.start();
+
 }
 
-TickTwo timerLerRfid(lerRfid, 5000, 0, MILLIS);
+void desativar_rele1_callback() {
+    digitalWrite(RELE1_PIN, HIGH);
+    rele1Ativo = false;
+}
+
+void desativar_rele2_callback() {
+    digitalWrite(RELE2_PIN, HIGH);
+    rele2Ativo = false;
+}
+
 
 void setup() {
-  pinMode(RELE_PIN, OUTPUT);
-  pinMode(RELE_PIN2, OUTPUT);
+  pinMode(RELE1_PIN, OUTPUT);
+  pinMode(RELE2_PIN, OUTPUT);
 
-  digitalWrite(RELE_PIN, LOW);
-  digitalWrite(RELE_PIN2, LOW);
+  digitalWrite(RELE1_PIN, LOW);
+  digitalWrite(RELE2_PIN, LOW);
   delay(3000);
-  digitalWrite(RELE_PIN, HIGH);
-  digitalWrite(RELE_PIN2, HIGH);
+  digitalWrite(RELE1_PIN, HIGH);
+  digitalWrite(RELE2_PIN, HIGH);
   
   Wire.begin(I2C_SDA, I2C_SCL);
   nfc.begin();
@@ -166,18 +187,18 @@ void setup() {
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
 
-  // Iniciar a task do rfid
+  // Iniciar a tasks
   timerLerRfid.start();
-
+  timerGerenciarErros.start();
+  
 }
 
 void loop() {
+
+  timerGerenciarErros.update();
   timerLerRfid.update();
-  
-  if (!eth_connected) {
-    // Se não estiver conectado, tenta inicializar a conexão Ethernet novamente
-    ETH.begin(ETH_ADDR, ETH_POWER_PIN, ETH_MDC_PIN, ETH_MDIO_PIN, ETH_TYPE, ETH_CLK_MODE);
-  }
+  timerDesativarRele1.update();
+  timerDesativarRele2.update();
 
   // Executa o loop do WebSocketsServer
   webSocket.loop();
