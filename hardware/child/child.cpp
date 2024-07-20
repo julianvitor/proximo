@@ -186,7 +186,8 @@ void setup() {
 
   uint32_t versiondata = nfc.getFirmwareVersion();
   if (!versiondata) {
-  } else {
+  } 
+  else {
     nfc.SAMConfig();
   }
   btStop();

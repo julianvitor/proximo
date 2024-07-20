@@ -5,17 +5,21 @@ Plataforma ESP32: Arduino ESP32 v2.0.17 (Baseada no ESP-IDF v4.4.7)
 
 Bibliotecas:
 
-WebSocketsServer
+WebSockets
 Versão: 2.4.2
 Autor: Markus Sattler
 Repositório: https://github.com/Links2004/arduinoWebSockets
 
-Adafruit PN532
-Versão: 1.3.3
-Autor: Adafruit
-Repositório: https://github.com/adafruit/Adafruit-PN532
+PN532
+Versão: ?
+Autor: elechouse
+Repositório: https://github.com/elechouse/PN532/tree/PN532_HSU?tab=readme-ov-file
 
-Adafruit BusIO
-Versão: 1.16.1
-Autor: Adafruit
-Repositório: https://github.com/adafruit/Adafruit_BusIO
+NDEF
+Versão: ?
+Autor: don
+Repositório: https://github.com/don/NDEF
+Observações: Renomear pasta NDEF-master para NDEF
+
+TickTwo  
+Versão: 4.4.0 
