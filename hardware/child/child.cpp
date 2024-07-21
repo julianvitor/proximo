@@ -1,17 +1,27 @@
+// Codigo desenvolvido por Julian Carreiro.
+
+// Boas praticas neste codigo.
+// Funções callback são nomeadas seguindo o padrão: função_faz_algo_callback().
+// Funções normais são nomeadas seguindo o padrão: funcaoFazAlgo().
+// Variaveis são nomeadas seguindo o padrão: armazena_alguma_coisa.
+// Constantes são nomeadas em caixa alta, seguindo o mesmo padrão das variaveis: ARMAZENA_ALGUMA_COISA.
+// Comentarios para bloco e semânticos são definidos acima do codigo.
+// Comentarios especificos são definidos ao lado da linha especifica.
+// Evite Comentarios sobre sintaxe, apenas em caso onde escritas avançadas são usadas.
+// A posição e ordem de estruturas, funções e outros devem ser mantida de acordo com suas funções, em resumo: próximo o que é semelhante.
 #include <Arduino.h>
 #include <ETH.h>
 #include <WebSocketsServer.h>
 #include <PN532_I2C.h>
 #include <PN532.h>
 #include "TickTwo.h"
+#include <Wire.h>
 
-// Reles e RFID
-#define RELE1_PIN 2
-#define RELE2_PIN 5
-
-// I2C
-#define I2C_SCL 32
-#define I2C_SDA 33
+// Definição dos pinos
+#define RELE1_PIN 2 // Pino digital conectado ao primeiro relé
+#define RELE2_PIN 5 // Pino digital conectado ao segundo relé
+#define I2C_SCL 32  // Pino i2c clock RFID
+#define I2C_SDA 33  // Pino i2c data RFID
 
 // Ethernet
 /* 
@@ -27,27 +37,31 @@
 #define ETH_MDC_PIN     23 // Pin# of the I²C clock signal for the Ethernet PHY
 #define ETH_MDIO_PIN    18 // Pin# of the I²C IO signal for the Ethernet PHY
 
-PN532_I2C pn532_i2c(Wire);
-PN532 nfc(pn532_i2c);
-
 WebSocketsServer webSocket = WebSocketsServer(81); // WebSocket server on port 81
 
-bool eth_connected = false;
+//Estados
+bool ethernet_conexao = false;
 bool rele1Ativo = false;
 bool rele2Ativo = false;
 
-// Duração do rele ativado em milissegundos
-int DURACAO_RELE = 20000;
+int DURACAO_RELE = 20000;// Duração do rele ativado em milissegundos
 
+// Variaveis globais
 String uidAnterior = "";
 String uidAtual = "";
 
-
+// Protótipos de funções
+void configurarPn532();
+void iniciarEthernet();
 // Prototipos de callbacks.
 void gerenciar_erros_callback();
 void ler_rfid_callback();
 void desativar_rele1_callback();
 void desativar_rele2_callback();
+
+// Instanciar sensor
+PN532_I2C pn532_i2c(Wire);
+PN532 nfc(pn532_i2c);
 
 // Instanciar os timers(tasks)
 TickTwo timerLerRfid(ler_rfid_callback, 6000, 0, MILLIS);
@@ -65,13 +79,13 @@ void WiFiEvent(WiFiEvent_t event) {
     case SYSTEM_EVENT_ETH_GOT_IP:
       if (ETH.fullDuplex()) {
       }
-      eth_connected = true;
+      ethernet_conexao = true;
       break;
     case SYSTEM_EVENT_ETH_DISCONNECTED:
-      eth_connected = false;
+      ethernet_conexao = false;
       break;
     case SYSTEM_EVENT_ETH_STOP:
-      eth_connected = false;
+      ethernet_conexao = false;
       break;
     default:
       break;
@@ -107,11 +121,10 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
   }
 
 void gerenciar_erros_callback(){
-  if (!eth_connected) {
+  if (!ethernet_conexao) {
     // Se não estiver conectado, tenta inicializar a conexão Ethernet novamente
     ETH.begin(ETH_ADDR, ETH_POWER_PIN, ETH_MDC_PIN, ETH_MDIO_PIN, ETH_TYPE, ETH_CLK_MODE);
   }
-
 }
 
 void ler_rfid_callback() {
@@ -130,7 +143,6 @@ void ler_rfid_callback() {
       if (uid[i] < 0x10) uidAtual += "0"; // Adiciona um zero à esquerda se necessário
       uidAtual += String(uid[i], HEX);
     }
-
     //verificar se o UID mudou ou se é a primeira vez que é lido
     if (uidAtual!= uidAnterior || uidAtual == "") {
       uidAnterior = uidAtual;
@@ -144,6 +156,16 @@ void ler_rfid_callback() {
       uidAnterior = "";
     }
   }
+}
+
+void desativar_rele1_callback() {
+    digitalWrite(RELE1_PIN, HIGH);
+    rele1Ativo = false;
+}
+
+void desativar_rele2_callback() {
+    digitalWrite(RELE2_PIN, HIGH);
+    rele2Ativo = false;
 }
 
 void ativarRele() {
@@ -160,51 +182,55 @@ void ativarRele2() {
 
 }
 
-void desativar_rele1_callback() {
-    digitalWrite(RELE1_PIN, HIGH);
-    rele1Ativo = false;
-}
-
-void desativar_rele2_callback() {
-    digitalWrite(RELE2_PIN, HIGH);
-    rele2Ativo = false;
-}
-
-
-void setup() {
-  pinMode(RELE1_PIN, OUTPUT);
-  pinMode(RELE2_PIN, OUTPUT);
-
-  digitalWrite(RELE1_PIN, LOW);
-  digitalWrite(RELE2_PIN, LOW);
-  delay(3000);
-  digitalWrite(RELE1_PIN, HIGH);
-  digitalWrite(RELE2_PIN, HIGH);
-  
-  Wire.begin(I2C_SDA, I2C_SCL);
-  nfc.begin();
-
-  uint32_t versiondata = nfc.getFirmwareVersion();
-  if (!versiondata) {
-  } 
-  else {
-    nfc.SAMConfig();
-  }
-  btStop();
-  
+void iniciarEthernet(){
   WiFi.onEvent(WiFiEvent);
   ETH.begin(ETH_ADDR,ETH_POWER_PIN, ETH_MDC_PIN, ETH_MDIO_PIN, ETH_TYPE, ETH_CLK_MODE);
+
+}
+
+void configurarPn532() {
+  uint32_t versiondata = nfc.getFirmwareVersion();
+  if (!versiondata) {} 
+  else {
+    nfc.SAMConfig(); // PN532 configurar para operar no modo de leitura.
+  }
+}
+
+void inicializarReles() {
+  pinMode(RELE1_PIN, OUTPUT);
+  pinMode(RELE2_PIN, OUTPUT); 
+}
+
+void testarReles() {
+  digitalWrite(RELE1_PIN, LOW);
+  delay(3000);
+  digitalWrite(RELE1_PIN, HIGH);
+  delay(1000);
+  digitalWrite(RELE2_PIN, LOW);
+  delay(3000);
+  digitalWrite(RELE2_PIN, HIGH);
+}
+
+void setup() {
+  btStop();// desativar o Bluetooth
+  inicializarReles();
+  testarReles();
+
+  Wire.begin(I2C_SDA, I2C_SCL);// Inicializa a interface I2C com os pinos SDA e SCL.
+  nfc.begin();// Inicializa o módulo PN532
+  configurarPn532(); // Configura o PN532 para operar no modo de leitura.
+
+
+  iniciarEthernet();
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
 
   // Iniciar a tasks
   timerLerRfid.start();
   timerGerenciarErros.start();
-  
 }
 
 void loop() {
-
   timerGerenciarErros.update();
   timerLerRfid.update();
   timerDesativarRele1.update();
