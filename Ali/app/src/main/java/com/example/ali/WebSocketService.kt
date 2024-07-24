@@ -73,7 +73,7 @@ class WebSocketService : Service() {
 
     private fun connectWebSocket() {
         val request = Request.Builder()
-            .url("ws://192.168.1.151:81")
+            .url("ws://192.168.1.150:8080")
             .build()
 
         webSocket = client.newWebSocket(request, object : WebSocketListener() {

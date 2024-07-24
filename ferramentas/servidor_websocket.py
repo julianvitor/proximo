@@ -2,15 +2,19 @@ import asyncio
 import websockets
 
 async def handler(websocket, path):
-    async for message in websocket:
-        print(f"Received message: {message}")
-        await websocket.send(f"Server received: {message}")
+    print(f"Client connected from {websocket.remote_address}")
+    try:
+        async for message in websocket:
+            print(f"Received message: {message}")
+            await websocket.send(f"Message received: {message}")
+    except websockets.ConnectionClosed:
+        print(f"Client disconnected from {websocket.remote_address}")
 
 async def main():
-    port = int(input("Digite a porta para o servidor: "))
-    async with websockets.serve(handler, "0.0.0.0", port):
-        print(f"Servidor WebSocket rodando na porta {port}")
-        await asyncio.Future()  # run forever
+    # Escuta em todas as interfaces de rede
+    server = await websockets.serve(handler, '0.0.0.0', 5000)
+    print("WebSocket server started on ws://0.0.0.0:5000")
+    await server.wait_closed()
 
 if __name__ == "__main__":
     asyncio.run(main())
