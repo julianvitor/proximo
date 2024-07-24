@@ -9,7 +9,6 @@
 // Comentarios especificos são definidos ao lado da linha especifica.
 // Evite Comentarios sobre sintaxe, apenas em caso onde escritas avançadas são usadas.
 // A posição e ordem de estruturas, funções e outros devem ser mantida de acordo com suas funções, em resumo: próximo o que é semelhante.
-
 #include <Arduino.h>
 #include <ETH.h>
 #include <WebSocketsClient.h>
@@ -84,24 +83,24 @@ void WiFiEvent(WiFiEvent_t event) {
 }
 
 void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
-    switch(type) {
-      case WStype_TEXT:
-        if (strcmp((char*)payload, "firmware") == 0){
-          uint32_t versiondata = nfc.getFirmwareVersion();// Verificar se o pn532 foi detectado
-          if (versiondata){
-            String firmware = "PN532 sensor 2 Firmware: ";
-            firmware += String(versiondata);
-            webSocket.sendTXT(firmware);// Enviar versão do firmware para o cliente
-          } 
-          else{
-            webSocket.sendTXT("Erro: PN532 sensor 2 não encontrado");// PN532 não econtrado, enviar mensagem de erro
-          }
+  switch(type) {
+    case WStype_TEXT:
+      if (strcmp((char*)payload, "firmware") == 0){
+        uint32_t versiondata = nfc.getFirmwareVersion();// Verificar se o pn532 foi detectado
+        if (versiondata){
+          String firmware = "PN532 sensor 2 Firmware: ";
+          firmware += String(versiondata);
+          webSocket.sendTXT(firmware);// Enviar versão do firmware para o cliente
+        } 
+        else{
+          webSocket.sendTXT("Erro: PN532 sensor 2 não encontrado");// PN532 não econtrado, enviar mensagem de erro
         }
-        break;
-      default:
-        break;
-    }
+      }
+      break;
+    default:
+      break;
   }
+}
 
 void gerenciar_erros_callback(){
   if (!ethernet_conexao) {
@@ -162,12 +161,13 @@ void setup() {
   configurarPn532(); // Configura o PN532 para operar no modo de leitura.
 
   iniciarEthernet();
-  webSocket.begin("ws://192.168.1.150", 8080); // Defina o endereço do seu servidor WebSocket
+  webSocket.begin("192.168.1.150", 8080,"/"); // Defina o endereço do seu servidor WebSocket
   webSocket.onEvent(webSocketEvent);
 
   // Iniciar a tasks
   timerLerRfid.start();
   timerGerenciarErros.start();
+  webSocket.setReconnectInterval(5000);
 }
 
 void loop() {

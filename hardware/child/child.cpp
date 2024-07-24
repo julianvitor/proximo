@@ -91,34 +91,39 @@ void WiFiEvent(WiFiEvent_t event) {
       break;
   }
 }
-
+// Função que trata os eventos do WebSocket
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
     switch(type) {
       case WStype_TEXT:
-        if (strcmp((char*)payload, "ativar 1") == 0){
+        if (strcmp((char*)payload, "ativar 1") == 0) {
           ativarRele();
         } 
-        else if (strcmp((char*)payload, "ativar 2") == 0){
+        else if (strcmp((char*)payload, "ativar 2") == 0) {
           ativarRele2();
         }
-        else if (strcmp((char*)payload, "firmware") == 0){
-          uint32_t versiondata = nfc.getFirmwareVersion();// Verificar se o pn532 foi detectado
-          if (versiondata){
+        else if (strcmp((char*)payload, "firmware") == 0) {
+          uint32_t versiondata = nfc.getFirmwareVersion(); // Verificar se o PN532 foi detectado
+          if (versiondata) {
             String firmware = "PN532 Firmware: ";
             firmware += String(versiondata);
-            webSocket.broadcastTXT(firmware);// Enviar versão do firmware para o cliente
+            webSocket.broadcastTXT(firmware); // Enviar versão do firmware para o cliente
           } 
-          else{
-            webSocket.broadcastTXT("Erro: PN532 não encontrado");// PN532 não econtrado, enviar mensagme de erro
+          else {
+            webSocket.broadcastTXT("Erro: PN532 não encontrado"); // PN532 não encontrado, enviar mensagem de erro
           }
         }
-          // Eco das mensagens recebidas para todos os clientes
-          webSocket.broadcastTXT((char*)payload, length); 
+        else if (strcmp((char*)payload, "log") == 0) {
+          String logMessage = "Número de clientes conectados: ";
+          logMessage += String(webSocket.connectedClients());
+          webSocket.broadcastTXT(logMessage); // Enviar número de clientes conectados para o cliente
+        }
+        // Eco das mensagens recebidas para todos os clientes
+        webSocket.broadcastTXT((char*)payload, length);
         break;
       default:
         break;
     }
-  }
+}
 
 void gerenciar_erros_callback(){
   if (!ethernet_conexao) {
