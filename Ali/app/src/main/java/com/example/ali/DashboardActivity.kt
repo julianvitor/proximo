@@ -1,6 +1,11 @@
 package com.example.ali
 
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
 import android.os.Bundle
+import android.os.IBinder
 import android.os.Handler
 import android.os.Looper
 import android.view.View
@@ -25,6 +30,21 @@ class DashboardActivity : AppCompatActivity() {
     private lateinit var countdownTextView: TextView
     private var countdownHandler: Handler = Handler(Looper.getMainLooper())
     private var countdownGeralHandler: Handler = Handler(Looper.getMainLooper())
+    private var webSocketService: WebSocketService? = null
+    private var isBound = false
+
+    private val connection = object : ServiceConnection {
+        override fun onServiceConnected(className: ComponentName, service: IBinder) {
+            val binder = service as WebSocketService.LocalBinder
+            webSocketService = binder.getService()
+            isBound = true
+            webSocketService?.setCurrentUser(apelido ?: "") // Passa o apelido para o serviço
+        }
+
+        override fun onServiceDisconnected(arg0: ComponentName) {
+            isBound = false
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -91,7 +111,7 @@ class DashboardActivity : AppCompatActivity() {
 
     private fun conectarWebSocket() {
         val request = Request.Builder()
-            .url("ws://192.168.1.150:81")
+            .url("ws://192.168.1.151:81")
             .build()
 
         val client = OkHttpClient()
@@ -153,6 +173,22 @@ class DashboardActivity : AppCompatActivity() {
     private fun exibirToast(mensagemToast: String) {
         handler.post {
             Toast.makeText(this@DashboardActivity, "$mensagemToast", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        Intent(this, WebSocketService::class.java).also { intent ->
+            bindService(intent, connection, Context.BIND_AUTO_CREATE)
+            startService(intent)
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (isBound) {
+            unbindService(connection)
+            isBound = false
         }
     }
 

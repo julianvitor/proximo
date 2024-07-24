@@ -37,7 +37,7 @@
                     android:id="@+id/bay1"
                     android:layout_width="0dp"
                     android:layout_height="80dp"
-                    android:layout_marginBottom="8dp"
+                    android:layout_marginBottom="10dp"
                     android:layout_weight="1"
                     android:background="@drawable/button_submit"
                     android:text="Dock 1"
