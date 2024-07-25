@@ -4,10 +4,11 @@ import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.ServiceConnection
 import android.os.Bundle
-import android.os.IBinder
 import android.os.Handler
+import android.os.IBinder
 import android.os.Looper
 import android.view.View
 import android.widget.Button
@@ -22,7 +23,7 @@ class DashboardActivity : AppCompatActivity() {
     private val handler = Handler(Looper.getMainLooper())
     private var doca: String? = null
     private var apelido: String? = null
-    private var countdownBotao: Int = 25
+    private var countdownBotao: Int = 30
     private var countdownGeral: Int = 60
     private lateinit var countdownTextView: TextView
     private var countdownHandler: Handler = Handler(Looper.getMainLooper())
@@ -51,6 +52,7 @@ class DashboardActivity : AppCompatActivity() {
             }
         }
     }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_dashboard)
@@ -92,6 +94,19 @@ class DashboardActivity : AppCompatActivity() {
         contadorGeral(countdownGeral)
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Registrar o BroadcastReceiver
+        val filter = IntentFilter("com.example.ali.ACTION_SUCCESS_REMOVIDO")
+        registerReceiver(broadcastReceiver, filter)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Desregistrar o BroadcastReceiver
+        unregisterReceiver(broadcastReceiver)
+    }
+
     private fun contadorGeral(countdownGeral: Int) {
         var currentCountdown = countdownGeral
         exibirToast("Tempo limite: $currentCountdown segundos")
@@ -117,6 +132,9 @@ class DashboardActivity : AppCompatActivity() {
                 currentCountdown--
                 countdownTextView.text = "Tempo restante: $currentCountdown segundos"
                 if (currentCountdown == 0) {
+                    if (isBound) {
+                        webSocketService?.setCurrentUserIndefinido()
+                    }
                     finish()
                     return
                 }

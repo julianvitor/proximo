@@ -20,8 +20,11 @@ class RegistroActivity : AppCompatActivity() {
     private lateinit var editTextNome: EditText
     private lateinit var editTextUsuario: EditText
     private lateinit var editTextSenha: EditText
+    private lateinit var editTextCnpj: EditText
+    private lateinit var editTextNomeEmpresa: EditText
     private lateinit var buttonRegistrar: Button
     private lateinit var dbHelper: DatabaseHelper
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_registro)
@@ -33,6 +36,8 @@ class RegistroActivity : AppCompatActivity() {
         editTextNome = findViewById(R.id.editTextNome)
         editTextUsuario = findViewById(R.id.editTextUsuario)
         editTextSenha = findViewById(R.id.editTextSenha)
+        editTextCnpj = findViewById(R.id.editTextCnpj)
+        editTextNomeEmpresa = findViewById(R.id.editTextNomeEmpresa)
         buttonRegistrar = findViewById(R.id.buttonRegistrar)
 
         // Inicializar o DBHelper
@@ -55,9 +60,11 @@ class RegistroActivity : AppCompatActivity() {
         val nome = editTextNome.text.toString().trim()
         val apelido = editTextUsuario.text.toString().trim()
         val senha = editTextSenha.text.toString().trim()
+        val cnpj = editTextCnpj.text.toString().trim()
+        val nomeEmpresa = editTextNomeEmpresa.text.toString().trim()
 
         // Validar os campos
-        if (nome.isEmpty() || apelido.isEmpty() || senha.isEmpty()) {
+        if (nome.isEmpty() || apelido.isEmpty() || senha.isEmpty() || cnpj.isEmpty() || nomeEmpresa.isEmpty()) {
             Toast.makeText(this, "Por favor, preencha todos os campos", Toast.LENGTH_SHORT).show()
             return
         }
@@ -74,6 +81,8 @@ class RegistroActivity : AppCompatActivity() {
             novoUsuario.put("nome", nome)
             novoUsuario.put("apelido", apelido)
             novoUsuario.put("senha", senha)
+            novoUsuario.put("cnpj", cnpj)
+            novoUsuario.put("nome_empresa", nomeEmpresa)
 
             // Adicionar o novo usuário ao arquivo JSON de usuários
             adicionarUsuarioAoJSON(novoUsuario)
@@ -83,6 +92,8 @@ class RegistroActivity : AppCompatActivity() {
             editTextNome.text.clear()
             editTextUsuario.text.clear()
             editTextSenha.text.clear()
+            editTextCnpj.text.clear()
+            editTextNomeEmpresa.text.clear()
             val intent = Intent(this, MainActivity::class.java)
             startActivity(intent)
 
