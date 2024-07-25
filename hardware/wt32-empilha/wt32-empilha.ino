@@ -93,6 +93,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
     }
   }
 
+
 void readRFID() {
   // Verifica se há um cartão RFID
   uint8_t success;
@@ -133,7 +134,6 @@ void readRFID() {
     }
   }
 }
-
 
 void acionarRele(int pin) {
   digitalWrite(pin, LOW);

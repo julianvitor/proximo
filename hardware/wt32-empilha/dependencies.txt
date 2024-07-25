@@ -1,0 +1,22 @@
+Dependências do Projeto:
+
+Placa e Bundle:
+Plataforma ESP32: Arduino ESP32 v2.0.17 (Baseada no ESP-IDF v4.4.7)
+
+Bibliotecas:
+
+WebSocketsServer
+Versão: 2.4.2
+Autor: Markus Sattler
+Repositório: https://github.com/Links2004/arduinoWebSockets
+
+PN532
+Versão: ?
+Autor: elechouse
+Repositório: https://github.com/elechouse/PN532/tree/PN532_HSU?tab=readme-ov-file
+
+NDEF
+Versão: ?
+Autor: don
+Repositório: https://github.com/don/NDEF
+Observações: Renomear pasta NDEF-master para NDEF
