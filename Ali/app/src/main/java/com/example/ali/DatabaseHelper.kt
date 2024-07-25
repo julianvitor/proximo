@@ -42,6 +42,32 @@ class DatabaseHelper(context: Context) {
         }
     }
 
+    fun getCnpjByNome(nome: String): String {
+        val usosJson = loadJsonFromFile(usuariosFileName) ?: JSONObject()
+        val usosArray = usosJson.optJSONArray("usuarios") ?: JSONArray()
+
+        for (i in 0 until usosArray.length()) {
+            val uso = usosArray.optJSONObject(i)
+            if (uso.optString("apelido") == nome) {
+                return uso.optString("cnpj", "CNPJ não disponível")
+            }
+        }
+        return "CNPJ não encontrado"
+    }
+
+    fun getNomeEmpresaByNome(nome: String): String {
+        val usosJson = loadJsonFromFile(usuariosFileName) ?: JSONObject()
+        val usosArray = usosJson.optJSONArray("usuarios") ?: JSONArray()
+
+        for (i in 0 until usosArray.length()) {
+            val uso = usosArray.optJSONObject(i)
+            if (uso.optString("apelido") == nome) {
+                return uso.optString("nome_empresa", "Nome da Empresa não disponível")
+            }
+        }
+        return "Nome da Empresa não encontrado"
+    }
+
     fun registrarUso(apelido: String, uid: String, doca: String) {
         val usosJson = loadJsonFromFile(usosFileName) ?: JSONObject()
         val usosArray = usosJson.optJSONArray("usos") ?: JSONArray()
@@ -100,11 +126,16 @@ class DatabaseHelper(context: Context) {
             val retirada = uso.optString("retirada")
             val devolucao = uso.optString("devolucao", "") // Se não houver devolução, retorna uma string vazia
             val uid = uso.optString("uid")
-            usuariosERetiradasDevolucao.add(Quadra(apelido, retirada, devolucao, uid))
+
+            // Agora, em vez de CNPJ e nome da empresa separadamente, podemos concatenar essas informações
+            val cnpjENomeEmpresa = "${getCnpjByNome(apelido)} - ${getNomeEmpresaByNome(apelido)}"
+
+            usuariosERetiradasDevolucao.add(Quadra(apelido, retirada, devolucao, cnpjENomeEmpresa))
         }
 
         return usuariosERetiradasDevolucao
     }
+
 
     private fun loadJsonFromAsset(fileName: String): String? {
         return try {
@@ -151,4 +182,6 @@ class DatabaseHelper(context: Context) {
         return "${calendar.get(Calendar.YEAR)}-${calendar.get(Calendar.MONTH) + 1}-${calendar.get(Calendar.DAY_OF_MONTH)} " +
                 "${calendar.get(Calendar.HOUR_OF_DAY)}:${calendar.get(Calendar.MINUTE)}:${calendar.get(Calendar.SECOND)}"
     }
+
+
 }

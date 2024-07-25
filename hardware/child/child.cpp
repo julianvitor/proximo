@@ -44,7 +44,7 @@ bool ethernet_conexao = false;
 bool rele1Ativo = false;
 bool rele2Ativo = false;
 
-int DURACAO_RELE = 20000;// Duração do rele ativado em milissegundos
+int DURACAO_RELE = 30000;// Duração do rele ativado em milissegundos
 
 // Variaveis globais
 String uidAnterior = "";

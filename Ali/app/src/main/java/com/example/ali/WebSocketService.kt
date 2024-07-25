@@ -54,6 +54,10 @@ class WebSocketService : Service() {
         currentUser = user
     }
 
+    fun setCurrentUserIndefinido() {
+        currentUser = "indefinido"
+    }
+
     private fun createNotification(): Notification {
         val channelId = "WebSocketServiceChannel"
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -111,18 +115,20 @@ class WebSocketService : Service() {
             }
             message.startsWith("removido:") -> {
                 val uid = message.substringAfter(":")
-                if (currentUser != null) {
+                if (currentUser == null) {
+                    showToast("Retirada inválida: Usuário não autenticado")
+                } else if (currentUser == "indefinido") {
+                    showToast("Retirada inválida: Usuário indefinido")
+                } else {
                     dbHelper?.registrarUso(currentUser!!, uid, "doca") // Assumindo que "doca" é um placeholder; ajuste conforme necessário
                     showToast("Sucesso: removido")
                     currentUser = null // Limpar usuário atual após registrar
                     // Enviar broadcast para encerrar a atividade Dashboard
                     sendBroadcast(Intent("com.example.ali.ACTION_SUCCESS_REMOVIDO"))
-                } else {
-                    showToast("Retirada invalida: Usuario não autenticado")
                 }
             }
             else -> {
-                showToast("mensagem recebida: $message")
+                showToast("Mensagem recebida: $message")
             }
         }
     }
