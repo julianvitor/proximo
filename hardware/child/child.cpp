@@ -19,7 +19,7 @@
 
 // Definição dos pinos
 #define RELE1_PIN 2 // Pino digital conectado ao primeiro relé
-#define RELE2_PIN 5 // Pino digital conectado ao segundo relé
+#define RELE2_PIN 4 // Pino digital conectado ao segundo relé
 #define I2C_SCL 32  // Pino i2c clock RFID
 #define I2C_SDA 33  // Pino i2c data RFID
 
