@@ -2,40 +2,50 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
+    android:orientation="vertical"
     android:padding="8dp">
 
     <!-- Nome do usuário -->
     <TextView
         android:id="@+id/nome_text_view"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
         android:textSize="16sp"
         android:textStyle="bold" />
+
+    <!-- CNPJ -->
+    <TextView
+        android:id="@+id/cnpj_text_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"/>
+
+    <!-- Nome da Empresa -->
+    <TextView
+        android:id="@+id/nome_empresa_text_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"/>
 
     <!-- Data de retirada -->
     <TextView
         android:id="@+id/retirada_text_view"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
         android:textSize="16sp" />
 
     <!-- Data de devolução -->
     <TextView
         android:id="@+id/devolucao_text_view"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
         android:textSize="16sp" />
 
     <!-- Tempo de uso -->
     <TextView
         android:id="@+id/tempo_text_view"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
         android:textSize="16sp" />
 
 </LinearLayout>
