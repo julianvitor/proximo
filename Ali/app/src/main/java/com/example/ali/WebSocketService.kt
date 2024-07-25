@@ -1,5 +1,6 @@
 package com.example.ali
 
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -17,7 +18,7 @@ import okhttp3.*
 class WebSocketService : Service() {
 
     private val binder = LocalBinder()
-    private lateinit var webSocket: WebSocket
+    lateinit var webSocket: WebSocket
     private val client = OkHttpClient()
     private val handler = Handler(Looper.getMainLooper())
     private var dbHelper: DatabaseHelper? = null
@@ -37,6 +38,7 @@ class WebSocketService : Service() {
         return binder
     }
 
+    @SuppressLint("ForegroundServiceType")
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val notification = createNotification()
         startForeground(1, notification)
@@ -65,8 +67,8 @@ class WebSocketService : Service() {
         }
 
         return NotificationCompat.Builder(this, channelId)
-            .setContentTitle("WebSocket Service")
-            .setContentText("O servidor WebSocket está rodando.")
+            .setContentTitle("devolução Service")
+            .setContentText("O Serviço de devolução está rodando")
             .setSmallIcon(R.drawable.ic_notification) // Certifique-se de que o ícone está correto
             .build()
     }
@@ -111,14 +113,16 @@ class WebSocketService : Service() {
                 val uid = message.substringAfter(":")
                 if (currentUser != null) {
                     dbHelper?.registrarUso(currentUser!!, uid, "doca") // Assumindo que "doca" é um placeholder; ajuste conforme necessário
-                    showToast("Sucesso: registrado")
+                    showToast("Sucesso: removido")
                     currentUser = null // Limpar usuário atual após registrar
+                    // Enviar broadcast para encerrar a atividade Dashboard
+                    sendBroadcast(Intent("com.example.ali.ACTION_SUCCESS_REMOVIDO"))
                 } else {
-                    showToast("Erro: Usuário não definido")
+                    showToast("Retirada invalida: Usuario não autenticado")
                 }
             }
             else -> {
-                showToast("Erro: Formato de mensagem inválido: $message")
+                showToast("mensagem recebida: $message")
             }
         }
     }
@@ -132,6 +136,6 @@ class WebSocketService : Service() {
     private fun reconnectWebSocket() {
         handler.postDelayed({
             connectWebSocket()
-        }, 5000)
+        }, 1000)
     }
 }

@@ -100,9 +100,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
-        if (isBound) {
-            unbindService(connection)
-            isBound = false
-        }
+        // Remover chamada para unbindService para garantir que o serviço continue rodando
     }
 }
