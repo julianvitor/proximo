@@ -18,10 +18,11 @@
 #include <Wire.h>
 
 // Definição dos pinos
-#define RELE1_PIN 2 // Pino digital conectado ao primeiro relé
-#define RELE2_PIN 4 // Pino digital conectado ao segundo relé
-#define I2C_SCL 32  // Pino i2c clock RFID
-#define I2C_SDA 33  // Pino i2c data RFID
+const int RELE1_PIN = 2; // Pino digital conectado ao primeiro relé
+const int RELE2_PIN = 4; // Pino digital conectado ao segundo relé
+const int I2C_SCL = 32;  // Pino i2c clock RFID
+const int I2C_SDA = 33;  // Pino i2c data RFID
+const int PN532_RESET_PIN = 12;   // Reset pin RFID
 
 // Ethernet
 /* 
@@ -43,6 +44,7 @@ WebSocketsServer webSocket = WebSocketsServer(8080); // WebSocket server on port
 bool ethernet_conexao = false;
 bool rele1Ativo = false;
 bool rele2Ativo = false;
+bool rsto_ativo = false;
 
 int DURACAO_RELE = 30000;// Duração do rele ativado em milissegundos
 
@@ -51,13 +53,13 @@ String uidAnterior = "";
 String uidAtual = "";
 
 // Protótipos de funções
-void configurarPn532();
 void iniciarEthernet();
-// Prototipos de callbacks.
 void gerenciar_erros_callback();
 void ler_rfid_callback();
 void desativar_rele1_callback();
 void desativar_rele2_callback();
+void reiniciar_pn532_callback();
+void iniciarPn532_callback(int I2C_SDA, int I2C_SCL);// Iniciar o rsto, instancia o PN532 e inicia a comunicacao em modo leitura
 
 // Instanciar sensor
 PN532_I2C pn532_i2c(Wire);
@@ -65,9 +67,12 @@ PN532 nfc(pn532_i2c);
 
 // Instanciar os timers(tasks)
 TickTwo timerLerRfid(ler_rfid_callback, 6000, 0, MILLIS);
+TickTwo timerReiniciarPn532(reiniciar_pn532_callback, 300000, 0, MILLIS);// Reinicia o PN532 a cada 300 segundos / 5 minutos
+TickTwo timerAtivarRsto([]() { iniciarPn532_callback(I2C_SDA, I2C_SCL); }, 100, 1, MILLIS);//necessario uso de função lambda para passar os parametros
 TickTwo timerGerenciarErros(gerenciar_erros_callback, 2000, 0, MILLIS);
 TickTwo timerDesativarRele1(desativar_rele1_callback, DURACAO_RELE, 1, MILLIS);
 TickTwo timerDesativarRele2(desativar_rele2_callback, DURACAO_RELE, 1, MILLIS);
+
 
 void WiFiEvent(WiFiEvent_t event) {
   switch (event) {
@@ -132,6 +137,14 @@ void gerenciar_erros_callback(){
   }
 }
 
+void reiniciar_pn532_callback(){
+  // Reinicia o PN532
+  digitalWrite(PN532_RESET_PIN, LOW);// pn532 entra em modo suspensão
+  rsto_ativo = false;
+  timerAtivarRsto.start();// pn532 sai de modo suspensão no tempo determinado
+
+}
+
 void ler_rfid_callback() {
   // Verifica se há um cartão RFID
   uint8_t success;
@@ -179,7 +192,6 @@ void ativarRele() {
     timerDesativarRele1.start();
 
 }
-
 void ativarRele2() {
     digitalWrite(RELE2_PIN, LOW);
     rele2Ativo = true;
@@ -193,7 +205,11 @@ void iniciarEthernet(){
 
 }
 
-void configurarPn532() {
+void iniciarPn532_callback(int I2C_SDA, int I2C_SCL) {
+  digitalWrite(PN532_RESET_PIN, HIGH);
+  rsto_ativo = true;
+  Wire.begin(I2C_SDA, I2C_SCL);// Inicializa a interface I2C com os pinos SDA e SCL.
+  nfc.begin();// Inicializa o módulo PN532
   uint32_t versiondata = nfc.getFirmwareVersion();
   if (!versiondata) {} 
   else {
@@ -201,45 +217,46 @@ void configurarPn532() {
   }
 }
 
-void inicializarReles() {
+void inicializarGPIOS() {
   pinMode(RELE1_PIN, OUTPUT);
   pinMode(RELE2_PIN, OUTPUT); 
+  pinMode(PN532_RESET_PIN, OUTPUT);
 }
 
 void testarReles() {
   digitalWrite(RELE1_PIN, LOW);
-  delay(3000);
+  delay(1000);
   digitalWrite(RELE1_PIN, HIGH);
   delay(1000);
   digitalWrite(RELE2_PIN, LOW);
-  delay(3000);
+  delay(1000);
   digitalWrite(RELE2_PIN, HIGH);
 }
 
 void setup() {
   btStop();// desativar o Bluetooth
-  inicializarReles();
+  inicializarGPIOS();
   testarReles();
-
-  Wire.begin(I2C_SDA, I2C_SCL);// Inicializa a interface I2C com os pinos SDA e SCL.
-  nfc.begin();// Inicializa o módulo PN532
-  configurarPn532(); // Configura o PN532 para operar no modo de leitura.
-
-
+  iniciarPn532_callback(I2C_SDA, I2C_SCL); // Configura o PN532 para operar no modo de leitura.
   iniciarEthernet();
+
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
 
   // Iniciar a tasks
   timerLerRfid.start();
   timerGerenciarErros.start();
+  timerReiniciarPn532.start();
 }
 
 void loop() {
+  // Tasks do TickTwo 
   timerGerenciarErros.update();
   timerLerRfid.update();
   timerDesativarRele1.update();
   timerDesativarRele2.update();
+  timerReiniciarPn532.update();
+  timerAtivarRsto.update();
 
   // Executa o loop do WebSocketsServer
   webSocket.loop();
