@@ -360,3 +360,7 @@ poetry.toml
 
 # LSP config files
 pyrightconfig.json
+
+# vscode
+.vscode/
+.ferramentas_proximo/
