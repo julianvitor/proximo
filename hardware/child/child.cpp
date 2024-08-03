@@ -22,7 +22,7 @@ const int RELE1_PIN = 2; // Pino digital conectado ao primeiro relé
 const int RELE2_PIN = 4; // Pino digital conectado ao segundo relé
 const int I2C_SCL = 32;  // Pino i2c clock RFID
 const int I2C_SDA = 33;  // Pino i2c data RFID
-const int PN532_RESET_PIN = 12;   // Reset pin RFID
+const int PN532_RESET_PIN = 15;   // Reset pin RFID
 
 // Ethernet
 /* 
@@ -141,7 +141,7 @@ void reiniciar_pn532_callback(){
   // Reinicia o PN532
   digitalWrite(PN532_RESET_PIN, LOW);// pn532 entra em modo suspensão
   rsto_ativo = false;
-  timerAtivarRsto.start();// pn532 sai de modo suspensão no tempo determinado
+  timerAtivarRsto.start();// Inicia e configura o pn532 no tempo determinado
 
 }
 
@@ -225,12 +225,10 @@ void inicializarGPIOS() {
 
 void testarReles() {
   digitalWrite(RELE1_PIN, LOW);
-  delay(1000);
-  digitalWrite(RELE1_PIN, HIGH);
-  delay(1000);
   digitalWrite(RELE2_PIN, LOW);
-  delay(1000);
+  delay(3000);
   digitalWrite(RELE2_PIN, HIGH);
+  digitalWrite(RELE1_PIN, HIGH);
 }
 
 void setup() {
