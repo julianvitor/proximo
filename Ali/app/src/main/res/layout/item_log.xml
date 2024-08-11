@@ -6,8 +6,46 @@
     android:padding="8dp">
 
     <TextView
-        android:id="@+id/textViewLogMessage"
+        android:id="@+id/timestampTextView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="16sp"/>
+        android:text="Timestamp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/macAddressTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="MAC Address" />
+
+    <TextView
+        android:id="@+id/ipAddressTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="IP Address" />
+
+    <TextView
+        android:id="@+id/coreTemperatureTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Core Temperature" />
+
+    <TextView
+        android:id="@+id/uptimeTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Uptime" />
+
+    <TextView
+        android:id="@+id/firmwareVersionTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Firmware Version" />
+
+    <TextView
+        android:id="@+id/firmwareStatusTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Firmware Status" />
+
 </LinearLayout>
