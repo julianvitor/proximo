@@ -61,13 +61,13 @@ class WebSocketService() : Service(), Parcelable {
         currentUser = "indefinido"
     }
 
-    // Métodos para controle do servidor WebSocket
     private fun startWebSocketServer() {
         val port = 8080
-        webSocketServer = MyWebSocketServer(InetSocketAddress(port))
+        webSocketServer = MyWebSocketServer(InetSocketAddress(port), this) // Passe o serviço
         webSocketServer.start()
         showToast("Servidor WebSocket iniciado na porta $port")
     }
+
 
     private fun stopWebSocketServer() {
         webSocketServer.stop(1000)
@@ -145,8 +145,11 @@ class WebSocketService() : Service(), Parcelable {
         }
     }
 
-    // Implementação da classe WebSocketServer
-    private class MyWebSocketServer(address: InetSocketAddress) : WebSocketServer(address) {
+    private class MyWebSocketServer(
+        address: InetSocketAddress,
+        private val service: WebSocketService // Adicione o serviço como parâmetro
+    ) : WebSocketServer(address) {
+
         override fun onOpen(conn: WebSocket, handshake: ClientHandshake) {
             conn.send("Conexão WebSocket estabelecida")
         }
@@ -156,8 +159,8 @@ class WebSocketService() : Service(), Parcelable {
         }
 
         override fun onMessage(conn: WebSocket, message: String) {
-            // Aqui, você chama handleWebSocketMessage no serviço
-            (conn.remoteSocketAddress?.address as? WebSocketService)?.handleWebSocketMessage(message, conn)
+            // Chame diretamente o método handleWebSocketMessage do serviço
+            service.handleWebSocketMessage(message, conn)
         }
 
         override fun onError(conn: WebSocket?, ex: Exception) {
@@ -168,6 +171,7 @@ class WebSocketService() : Service(), Parcelable {
             // Ação quando o servidor começa a rodar
         }
     }
+
 
     // Implementação da interface Parcelable
     override fun writeToParcel(parcel: Parcel, flags: Int) {
