@@ -13,6 +13,7 @@ data class Quadra<T, U, V, W>(val first: T, val second: U, val third: V, val fou
 class DatabaseHelper(context: Context) {
     val usuariosFileName = "usuarios.json"
     val usosFileName = "usos.json"
+
     val context: Context = context.applicationContext
 
     fun registrarDevolucao(uid: String) {
@@ -148,6 +149,37 @@ class DatabaseHelper(context: Context) {
         } catch (e: IOException) {
             e.printStackTrace()
             null
+        }
+    }
+
+    fun addLogToFile(logJson: JSONObject) {
+        val logFileName = "log.json"
+        val file = File(context.filesDir, logFileName)
+        try {
+            if (file.exists()) {
+                // Ler o conteúdo existente
+                val existingContent = file.readText()
+                val jsonArray = if (existingContent.isNotEmpty()) {
+                    JSONArray(existingContent)
+                } else {
+                    JSONArray()
+                }
+
+                // Adicionar novo log
+                jsonArray.put(logJson)
+
+                // Escrever o conteúdo atualizado
+                writeJsonToFile(jsonArray.toString(4), logFileName)
+            } else {
+                // Criar um novo arquivo com o primeiro log
+                val jsonArray = JSONArray()
+                jsonArray.put(logJson)
+
+                // Escrever o novo arquivo
+                writeJsonToFile(jsonArray.toString(4), logFileName)
+            }
+        } catch (e: IOException) {
+            e.printStackTrace()
         }
     }
 

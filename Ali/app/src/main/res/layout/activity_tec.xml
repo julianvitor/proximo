@@ -10,6 +10,16 @@
         android:orientation="vertical"
         android:padding="16dp">
 
+        <!-- Título -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Àrea tecnica"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:gravity="center_horizontal" />
+
+        <!--botão de log -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonGenerateLog"
             android:layout_width="match_parent"
@@ -20,6 +30,23 @@
             android:layout_marginTop="20dp"
             app:backgroundTint="@color/button_background_color"
             android:textSize="18sp" />
+
+        <!--log RecyclerView-->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/log_recycler_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp" />
+
+        <!--botão voltar -->
+        <com.google.android.material.button.MaterialButton
+            android:text="Voltar"
+            android:id="@+id/buttonBack"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:background="@drawable/button_back"
+            app:backgroundTint="@color/button_back_background_color" />
 
     </LinearLayout>
 </ScrollView>

@@ -72,6 +72,12 @@
             android:exported="true">
         </activity>
 
+        <!--TecActivity-->
+        <activity
+            android:name=".TecActivity"
+            android:exported="true">
+        </activity>
+
     </application>
 
 </manifest>

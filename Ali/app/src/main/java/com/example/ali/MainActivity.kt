@@ -57,9 +57,15 @@ class MainActivity : AppCompatActivity() {
             if (apelido.isNotEmpty() && senha.isNotEmpty()) {
                 // Verificar se as credenciais são de administrador
                 if (apelido == "admin" && senha == "admin") {
-                    val intent = Intent(this, AdminActivity::class.java)
-                    startActivity(intent)
-                } else {
+                    val intentAdmin = Intent(this, AdminActivity::class.java)
+                    startActivity(intentAdmin)
+                }
+                else if(apelido == "tec" && senha == "tec"){
+                    val intentTec = Intent(this, TecActivity::class.java)
+                    startActivity(intentTec)
+                }
+
+                else {
                     // Verificar as credenciais no banco de dados
                     val isValidCredentials = dbHelper.verificarCredenciais(apelido, senha)
 

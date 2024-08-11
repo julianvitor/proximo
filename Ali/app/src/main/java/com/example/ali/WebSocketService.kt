@@ -11,6 +11,7 @@ import androidx.core.app.NotificationCompat
 import org.java_websocket.server.WebSocketServer
 import org.java_websocket.WebSocket
 import org.java_websocket.handshake.ClientHandshake
+import org.json.JSONObject
 import java.net.InetSocketAddress
 
 class WebSocketService() : Service(), Parcelable {
@@ -20,6 +21,7 @@ class WebSocketService() : Service(), Parcelable {
     private var dbHelper: DatabaseHelper? = null
     private var currentUser: String? = null
     private lateinit var webSocketServer: MyWebSocketServer
+
 
     constructor(parcel: Parcel) : this() {
         currentUser = parcel.readString()
@@ -77,12 +79,14 @@ class WebSocketService() : Service(), Parcelable {
     // Manipulação de mensagens WebSocket
     private fun handleWebSocketMessage(message: String, conn: WebSocket) {
         when {
+            //inserção
             message.startsWith("inserido:") -> {
                 val uid = message.substringAfter(":")
                 dbHelper?.registrarDevolucao(uid)
                 showToast("Sucesso: devolvido")
                 conn.send("Sucesso: devolvido")
             }
+            //remoção
             message.startsWith("removido:") -> {
                 val uid = message.substringAfter(":")
                 if (currentUser == null) {
@@ -99,6 +103,24 @@ class WebSocketService() : Service(), Parcelable {
                     sendBroadcast(Intent("com.example.ali.ACTION_SUCCESS_REMOVIDO"))
                 }
             }
+            //json
+            message.startsWith("{") -> {
+                try {
+                    val jsonObject = JSONObject(message)
+
+                    if (jsonObject.has("log")) {
+                        dbHelper?.addLogToFile(jsonObject)
+                        showToast("Log salvo com sucesso")
+                    } else {
+                        showToast("Outro JSON recebido: $jsonObject")
+                        conn.send("Outro JSON processado com sucesso")
+                    }
+                } catch (e: Exception) {
+                    showToast("Erro ao processar o JSON")
+                    conn.send("Erro ao processar o JSON")
+                }
+            }
+
             else -> {
                 showToast("Mensagem recebida: $message")
                 conn.send("Mensagem recebida: $message")
