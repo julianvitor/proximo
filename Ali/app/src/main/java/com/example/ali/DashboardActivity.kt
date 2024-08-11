@@ -6,10 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.ServiceConnection
-import android.os.Bundle
-import android.os.Handler
-import android.os.IBinder
-import android.os.Looper
+import android.os.*
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
@@ -31,12 +28,12 @@ class DashboardActivity : AppCompatActivity() {
     private var webSocketService: WebSocketService? = null
     private var isBound = false
 
+    // Conexão ao serviço WebSocket
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(className: ComponentName, service: IBinder) {
             val binder = service as WebSocketService.LocalBinder
             webSocketService = binder.getService()
             isBound = true
-            // Passar o nome de usuário para o serviço
             webSocketService?.setCurrentUser(apelido ?: "")
         }
 
@@ -45,10 +42,11 @@ class DashboardActivity : AppCompatActivity() {
         }
     }
 
+    // BroadcastReceiver para receber ações do serviço
     private val broadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == "com.example.ali.ACTION_SUCCESS_REMOVIDO") {
-                finish()  // Encerra a atividade
+                finish()
             }
         }
     }
@@ -58,64 +56,75 @@ class DashboardActivity : AppCompatActivity() {
         setContentView(R.layout.activity_dashboard)
 
         apelido = intent.getStringExtra("apelidoUsuario")
-
         dbHelper = DatabaseHelper(this)
-
-        val bay1Button: Button = findViewById(R.id.bay1)
-        val bay2Button: Button = findViewById(R.id.bay2)
         countdownTextView = findViewById(R.id.countdownTextView)
 
-        bay1Button.setOnClickListener {
-            countdownTextView.visibility = View.VISIBLE
-            contadorBotao(countdownBotao)
-            enviarMensagem("ativar 1")
-            doca = "1"
-        }
-
-        bay2Button.setOnClickListener {
-            countdownTextView.visibility = View.VISIBLE
-            contadorBotao(countdownBotao)
-            enviarMensagem("ativar 2")
-            doca = "2"
-        }
-
-        // Botão voltar
-        val buttonBack: MaterialButton = findViewById(R.id.buttonBack)
-        buttonBack.setOnClickListener {
-            onBackPressedDispatcher.onBackPressed()
-        }
-
-        // Conectar ao serviço
-        Intent(this, WebSocketService::class.java).also { intent ->
-            bindService(intent, connection, Context.BIND_AUTO_CREATE)
-            startService(intent)
-        }
-
-        contadorGeral(countdownGeral)
+        setupUI()
+        connectToWebSocketService()
+        startGeneralCountdown(countdownGeral)
     }
 
     override fun onResume() {
         super.onResume()
-        // Registrar o BroadcastReceiver
-        val filter = IntentFilter("com.example.ali.ACTION_SUCCESS_REMOVIDO")
-        registerReceiver(broadcastReceiver, filter)
+        registerReceiver(broadcastReceiver, IntentFilter("com.example.ali.ACTION_SUCCESS_REMOVIDO"))
     }
 
     override fun onPause() {
         super.onPause()
-        // Desregistrar o BroadcastReceiver
         unregisterReceiver(broadcastReceiver)
     }
 
-    private fun contadorGeral(countdownGeral: Int) {
-        var currentCountdown = countdownGeral
-        exibirToast("Tempo limite: $currentCountdown segundos")
+    override fun onDestroy() {
+        super.onDestroy()
+        if (isBound) {
+            unbindService(connection)
+            isBound = false
+        }
+        countdownHandler.removeCallbacksAndMessages(null)
+        countdownGeralHandler.removeCallbacksAndMessages(null)
+    }
+
+    // Configuração da interface do usuário
+    private fun setupUI() {
+        val bay1Button: Button = findViewById(R.id.bay1)
+        val bay2Button: Button = findViewById(R.id.bay2)
+        val buttonBack: MaterialButton = findViewById(R.id.buttonBack)
+
+        bay1Button.setOnClickListener {
+            startButtonCountdown(countdownBotao)
+            sendMessage("ativar 1")
+            doca = "1"
+        }
+
+        bay2Button.setOnClickListener {
+            startButtonCountdown(countdownBotao)
+            sendMessage("ativar 2")
+            doca = "2"
+        }
+
+        buttonBack.setOnClickListener {
+            onBackPressedDispatcher.onBackPressed()
+        }
+    }
+
+    // Conectar ao serviço WebSocket
+    private fun connectToWebSocketService() {
+        Intent(this, WebSocketService::class.java).also { intent ->
+            bindService(intent, connection, Context.BIND_AUTO_CREATE)
+            startService(intent)
+        }
+    }
+
+    // Iniciar contagem regressiva geral
+    private fun startGeneralCountdown(countdownTime: Int) {
+        var currentCountdown = countdownTime
+        showToast("Tempo limite: $currentCountdown segundos")
         countdownGeralHandler.removeCallbacksAndMessages(null)
         countdownGeralHandler.postDelayed(object : Runnable {
             override fun run() {
                 currentCountdown--
                 if (currentCountdown == 0) {
-                    exibirToast("Tempo limite atingido")
+                    showToast("Tempo limite atingido")
                     finish()
                     return
                 }
@@ -124,8 +133,10 @@ class DashboardActivity : AppCompatActivity() {
         }, 1000)
     }
 
-    private fun contadorBotao(countdown: Int) {
-        var currentCountdown = countdown
+    // Iniciar contagem regressiva do botão
+    private fun startButtonCountdown(countdownTime: Int) {
+        var currentCountdown = countdownTime
+        countdownTextView.visibility = View.VISIBLE
         countdownHandler.removeCallbacksAndMessages(null)
         countdownHandler.postDelayed(object : Runnable {
             override fun run() {
@@ -143,34 +154,27 @@ class DashboardActivity : AppCompatActivity() {
         }, 1000)
     }
 
-    private fun enviarMensagem(mensagem: String) {
+    // Enviar mensagem via WebSocket
+    private fun sendMessage(message: String) {
         if (isBound) {
-            webSocketService?.webSocket?.send(mensagem)
-            exibirMensagemEnviada(mensagem)
+            webSocketService?.broadcast(message)
+            showMessageSent(message)
         } else {
-            exibirToast("Serviço WebSocket não disponível")
+            showToast("Serviço WebSocket não vinculado")
         }
     }
 
-    private fun exibirMensagemEnviada(mensagem: String) {
+    // Exibir mensagem enviada
+    private fun showMessageSent(message: String) {
         handler.post {
-            Toast.makeText(this@DashboardActivity, "Mensagem enviada: $mensagem", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Mensagem enviada: $message", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun exibirToast(mensagemToast: String) {
+    // Exibir Toast
+    private fun showToast(message: String) {
         handler.post {
-            Toast.makeText(this@DashboardActivity, mensagemToast, Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        // Desconectar do serviço
-        if (isBound) {
-            unbindService(connection)
-            isBound = false
-        }
-        countdownHandler.removeCallbacksAndMessages(null)
     }
 }

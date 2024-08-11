@@ -1,44 +1,46 @@
 package com.example.ali
 
-import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
-import android.os.Binder
-import android.os.Build
-import android.os.Handler
-import android.os.IBinder
-import android.os.Looper
+import android.os.*
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
-import okhttp3.*
+import org.java_websocket.server.WebSocketServer
+import org.java_websocket.WebSocket
+import org.java_websocket.handshake.ClientHandshake
+import java.net.InetSocketAddress
 
-class WebSocketService : Service() {
+class WebSocketService() : Service(), Parcelable {
 
     private val binder = LocalBinder()
-    lateinit var webSocket: WebSocket
-    private val client = OkHttpClient()
     private val handler = Handler(Looper.getMainLooper())
     private var dbHelper: DatabaseHelper? = null
     private var currentUser: String? = null
+    private lateinit var webSocketServer: MyWebSocketServer
 
+    constructor(parcel: Parcel) : this() {
+        currentUser = parcel.readString()
+    }
+
+    // Classe interna para a ligação do serviço
     inner class LocalBinder : Binder() {
         fun getService(): WebSocketService = this@WebSocketService
     }
 
+    // Ciclo de vida do serviço
     override fun onCreate() {
         super.onCreate()
         dbHelper = DatabaseHelper(this)
-        connectWebSocket()
+        startWebSocketServer()
     }
 
     override fun onBind(intent: Intent?): IBinder {
         return binder
     }
 
-    @SuppressLint("ForegroundServiceType")
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val notification = createNotification()
         startForeground(1, notification)
@@ -47,9 +49,10 @@ class WebSocketService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        disconnectWebSocket()
+        stopWebSocketServer()
     }
 
+    // Métodos para controle do usuário atual
     fun setCurrentUser(user: String) {
         currentUser = user
     }
@@ -58,6 +61,64 @@ class WebSocketService : Service() {
         currentUser = "indefinido"
     }
 
+    // Métodos para controle do servidor WebSocket
+    private fun startWebSocketServer() {
+        val port = 8080
+        webSocketServer = MyWebSocketServer(InetSocketAddress(port))
+        webSocketServer.start()
+        showToast("Servidor WebSocket iniciado na porta $port")
+    }
+
+    private fun stopWebSocketServer() {
+        webSocketServer.stop(1000)
+        showToast("Servidor WebSocket parado")
+    }
+
+    // Manipulação de mensagens WebSocket
+    private fun handleWebSocketMessage(message: String, conn: WebSocket) {
+        when {
+            message.startsWith("inserido:") -> {
+                val uid = message.substringAfter(":")
+                dbHelper?.registrarDevolucao(uid)
+                showToast("Sucesso: devolvido")
+                conn.send("Sucesso: devolvido")
+            }
+            message.startsWith("removido:") -> {
+                val uid = message.substringAfter(":")
+                if (currentUser == null) {
+                    showToast("Retirada inválida: Usuário não autenticado")
+                    conn.send("Retirada inválida: Usuário não autenticado")
+                } else if (currentUser == "indefinido") {
+                    showToast("Retirada inválida: Usuário indefinido")
+                    conn.send("Retirada inválida: Usuário indefinido")
+                } else {
+                    dbHelper?.registrarUso(currentUser!!, uid, "doca")
+                    showToast("Sucesso: removido")
+                    conn.send("Sucesso: removido")
+                    currentUser = null
+                    sendBroadcast(Intent("com.example.ali.ACTION_SUCCESS_REMOVIDO"))
+                }
+            }
+            else -> {
+                showToast("Mensagem recebida: $message")
+                conn.send("Mensagem recebida: $message")
+            }
+        }
+    }
+
+    // Método para enviar uma mensagem para todos os clientes conectados
+    fun broadcast(mensagem: String) {
+        if (::webSocketServer.isInitialized) {
+            for (client in webSocketServer.connections) {
+                client.send(mensagem)
+            }
+        } else {
+            showToast("Servidor WebSocket não iniciado")
+        }
+    }
+
+
+    // Criação e gerenciamento de notificações
     private fun createNotification(): Notification {
         val channelId = "WebSocketServiceChannel"
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -71,77 +132,59 @@ class WebSocketService : Service() {
         }
 
         return NotificationCompat.Builder(this, channelId)
-            .setContentTitle("devolução Service")
-            .setContentText("O Serviço de devolução está rodando")
+            .setContentTitle("WebSocket Server")
+            .setContentText("O Servidor WebSocket está rodando")
             .setSmallIcon(R.drawable.ic_notification) // Certifique-se de que o ícone está correto
             .build()
     }
 
-    private fun connectWebSocket() {
-        val request = Request.Builder()
-            .url("ws://192.168.1.150:8080")
-            .build()
-
-        webSocket = client.newWebSocket(request, object : WebSocketListener() {
-            override fun onOpen(webSocket: WebSocket, response: Response) {
-                showToast("Conexão WebSocket aberta")
-            }
-
-            override fun onMessage(webSocket: WebSocket, text: String) {
-                handleWebSocketMessage(text)
-            }
-
-            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                showToast("Erro na conexão WebSocket: ${t.message ?: "Erro desconhecido"}")
-                reconnectWebSocket()
-            }
-        })
-    }
-
-    private fun disconnectWebSocket() {
-        try {
-            webSocket.close(1000, "Service stopped")
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    private fun handleWebSocketMessage(message: String) {
-        when {
-            message.startsWith("inserido:") -> {
-                val uid = message.substringAfter(":")
-                dbHelper?.registrarDevolucao(uid)
-                showToast("Sucesso: devolvido")
-            }
-            message.startsWith("removido:") -> {
-                val uid = message.substringAfter(":")
-                if (currentUser == null) {
-                    showToast("Retirada inválida: Usuário não autenticado")
-                } else if (currentUser == "indefinido") {
-                    showToast("Retirada inválida: Usuário indefinido")
-                } else {
-                    dbHelper?.registrarUso(currentUser!!, uid, "doca") // Assumindo que "doca" é um placeholder; ajuste conforme necessário
-                    showToast("Sucesso: removido")
-                    currentUser = null // Limpar usuário atual após registrar
-                    // Enviar broadcast para encerrar a atividade Dashboard
-                    sendBroadcast(Intent("com.example.ali.ACTION_SUCCESS_REMOVIDO"))
-                }
-            }
-            else -> {
-                showToast("Mensagem recebida: $message")
-            }
-        }
-    }
-
+    // Exibir mensagens Toast
     private fun showToast(message: String) {
         handler.post {
             Toast.makeText(this@WebSocketService, message, Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun reconnectWebSocket() {
-        handler.postDelayed({
-            connectWebSocket()
-        }, 1000)
+    // Implementação da classe WebSocketServer
+    private class MyWebSocketServer(address: InetSocketAddress) : WebSocketServer(address) {
+        override fun onOpen(conn: WebSocket, handshake: ClientHandshake) {
+            conn.send("Conexão WebSocket estabelecida")
+        }
+
+        override fun onClose(conn: WebSocket, code: Int, reason: String, remote: Boolean) {
+            // Ação quando um cliente desconecta
+        }
+
+        override fun onMessage(conn: WebSocket, message: String) {
+            // Aqui, você chama handleWebSocketMessage no serviço
+            (conn.remoteSocketAddress?.address as? WebSocketService)?.handleWebSocketMessage(message, conn)
+        }
+
+        override fun onError(conn: WebSocket?, ex: Exception) {
+            ex.printStackTrace()
+        }
+
+        override fun onStart() {
+            // Ação quando o servidor começa a rodar
+        }
+    }
+
+    // Implementação da interface Parcelable
+    override fun writeToParcel(parcel: Parcel, flags: Int) {
+        parcel.writeString(currentUser)
+    }
+
+    override fun describeContents(): Int {
+        return 0
+    }
+
+    companion object CREATOR : Parcelable.Creator<WebSocketService> {
+        override fun createFromParcel(parcel: Parcel): WebSocketService {
+            return WebSocketService(parcel)
+        }
+
+        override fun newArray(size: Int): Array<WebSocketService?> {
+            return arrayOfNulls(size)
+        }
     }
 }
