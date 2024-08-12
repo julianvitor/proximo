@@ -95,10 +95,6 @@ class MainActivity : AppCompatActivity() {
             editTextEmail.text.clear()
             editTextPassword.text.clear()
         }
-    }
-
-    override fun onStart() {
-        super.onStart()
         // Iniciar o WebSocketService
         Intent(this, WebSocketService::class.java).also { intent ->
             bindService(intent, connection, Context.BIND_AUTO_CREATE)
@@ -109,6 +105,13 @@ class MainActivity : AppCompatActivity() {
         Intent(this, SyncService::class.java).also { intent ->
             startService(intent)
         }
+
+    }
+
+    override fun onStart() {
+        super.onStart()
+
+
     }
 
     override fun onStop() {

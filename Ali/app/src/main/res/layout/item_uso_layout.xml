@@ -3,11 +3,11 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="8dp">
+    android:padding="12dp">
 
-    <!-- Nome do usuário -->
+    <!-- Email -->
     <TextView
-        android:id="@+id/nome_text_view"
+        android:id="@+id/email_text_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textSize="16sp"
@@ -18,14 +18,14 @@
         android:id="@+id/cnpj_text_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="14sp"/>
+        android:textSize="16sp"/>
 
     <!-- Nome da Empresa -->
     <TextView
         android:id="@+id/nome_empresa_text_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="14sp"/>
+        android:textSize="16sp"/>
 
     <!-- Data de retirada -->
     <TextView

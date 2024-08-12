@@ -29,14 +29,14 @@ class AdminActivity : AppCompatActivity() {
         val adapter = UsoAdapter(databaseHelper.getUsuariosERetiradasDevolucao())
         recyclerView.adapter = adapter
 
-        //botão voltar
+        // Botão voltar
         val buttonBack: MaterialButton = findViewById(R.id.buttonBack)
-        buttonBack.setOnClickListener{
+        buttonBack.setOnClickListener {
             onBackPressedDispatcher.onBackPressed()
         }
     }
 
-    private inner class UsoAdapter(private val listaDeUsuarios: List<Quadra<String, String, String, String>>) :
+    private inner class UsoAdapter(private val listaDeUsuarios: List<UsuarioUsoInfo>) :
         RecyclerView.Adapter<UsoAdapter.UsoViewHolder>() {
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): UsoViewHolder {
@@ -46,16 +46,16 @@ class AdminActivity : AppCompatActivity() {
         }
 
         override fun onBindViewHolder(holder: UsoViewHolder, position: Int) {
-            val (nome, retirada, devolucao, _) = listaDeUsuarios[position]
+            val usuario = listaDeUsuarios[position]
 
-            holder.nomeTextView.text = nome
-            holder.retiradaTextView.text = retirada
-            holder.devolucaoTextView.text = devolucao
+            holder.emailTextView.text = usuario.email
+            holder.retiradaTextView.text = usuario.retirada
+            holder.devolucaoTextView.text = usuario.devolucao
 
-            val diferencaTempo = calcularDiferencaTempo(retirada, devolucao)
+            val diferencaTempo = calcularDiferencaTempo(usuario.retirada, usuario.devolucao)
             holder.tempoTextView.text = formatarTempo(diferencaTempo)
-            holder.cnpjTextView.text = "CNPJ: ${databaseHelper.getCnpjByEmail(nome)}"
-            holder.nomeEmpresaTextView.text = "Nome da Empresa: ${databaseHelper.getNomeEmpresaByEmail(nome)}"
+            holder.cnpjTextView.text = "CNPJ: ${usuario.cnpj}"
+            holder.nomeEmpresaTextView.text = "Nome da Empresa: ${usuario.nomeEmpresa}"
         }
 
         override fun getItemCount(): Int {
@@ -63,7 +63,7 @@ class AdminActivity : AppCompatActivity() {
         }
 
         inner class UsoViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-            val nomeTextView: TextView = itemView.findViewById(R.id.nome_text_view)
+            val emailTextView: TextView = itemView.findViewById(R.id.email_text_view)
             val retiradaTextView: TextView = itemView.findViewById(R.id.retirada_text_view)
             val devolucaoTextView: TextView = itemView.findViewById(R.id.devolucao_text_view)
             val tempoTextView: TextView = itemView.findViewById(R.id.tempo_text_view)
