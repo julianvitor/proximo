@@ -364,3 +364,6 @@ pyrightconfig.json
 # vscode
 .vscode/
 .ferramentas_proximo/
+
+# android env
+/gradle.properties
