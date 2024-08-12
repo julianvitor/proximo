@@ -81,7 +81,7 @@ void WiFiEvent(WiFiEvent_t event) {
       break;
   }
 }
-
+// Função que trata os eventos do WebSocket
 void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
   switch(type) {
     case WStype_TEXT:
@@ -139,7 +139,6 @@ void ler_rfid_callback() {
     }
   }
 }
-
 
 void iniciarEthernet(){
   WiFi.onEvent(WiFiEvent);
