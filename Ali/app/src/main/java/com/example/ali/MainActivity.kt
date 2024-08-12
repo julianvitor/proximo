@@ -14,7 +14,7 @@ import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var editTextUsername: EditText
+    private lateinit var editTextEmail: EditText
     private lateinit var editTextPassword: EditText
     private lateinit var buttonLogin: Button
     private lateinit var buttonRegister: Button
@@ -39,7 +39,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         // Inicializar as views
-        editTextUsername = findViewById(R.id.editTextUsername)
+        editTextEmail = findViewById(R.id.editTextEmail)
         editTextPassword = findViewById(R.id.editTextPassword)
         buttonLogin = findViewById(R.id.buttonLogin)
         buttonRegister = findViewById(R.id.buttonRegister)
@@ -47,41 +47,41 @@ class MainActivity : AppCompatActivity() {
 
         // Configurar OnClickListener para o botão Login
         buttonLogin.setOnClickListener {
-            val apelido = editTextUsername.text.toString()
-            val senha = editTextPassword.text.toString()
+            val email = editTextEmail.text.toString()
+            val pin = editTextPassword.text.toString()
 
-            // Limpar os campos de usuário e senha
-            editTextUsername.text.clear()
+            // Limpar os campos de email e pin
+            editTextEmail.text.clear()
             editTextPassword.text.clear()
 
-            // Verificar se o usuário e a senha estão vazios
-            if (apelido.isNotEmpty() && senha.isNotEmpty()) {
+            // Verificar se o email e a pin estão vazios
+            if (email.isNotEmpty() && pin.isNotEmpty()) {
                 // Verificar se as credenciais são de administrador
-                if (apelido == "admin" && senha == "admin") {
+                if (email == "admin" && pin == "admin") {
                     val intentAdmin = Intent(this, AdminActivity::class.java)
                     startActivity(intentAdmin)
                 }
-                else if(apelido == "tec" && senha == "tec"){
+                else if(email == "tec" && pin == "tec"){
                     val intentTec = Intent(this, TecActivity::class.java)
                     startActivity(intentTec)
                 }
 
                 else {
                     // Verificar as credenciais no banco de dados
-                    val isValidCredentials = dbHelper.verificarCredenciais(apelido, senha)
+                    val isValidCredentials = dbHelper.verificarCredenciais(email, pin)
 
                     if (isValidCredentials) {
-                        // Passar o nome de usuário para a próxima atividade
+                        // Passar o nome de email para a próxima atividade
                         val intent = Intent(this, DashboardActivity::class.java)
-                        intent.putExtra("apelidoUsuario", apelido) // Passando o nome de usuário como extra
+                        intent.putExtra("emailUsuario", email) // Passando o nome de email como extra
                         startActivity(intent)
                     } else {
                         // Se as credenciais forem inválidas, exibir uma mensagem de erro
-                        Toast.makeText(this, "Usuário ou senha inválidos", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "E-mail ou PIN inválidos", Toast.LENGTH_SHORT).show()
                     }
                 }
             } else {
-                // Se o usuário ou a senha estiverem vazios, exibir uma mensagem de erro
+                // Se o email ou a pin estiverem vazios, exibir uma mensagem de erro
                 Toast.makeText(this, "Por favor, preencha todos os campos", Toast.LENGTH_SHORT).show()
             }
         }
@@ -91,8 +91,8 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(this, RegistroActivity::class.java)
             startActivity(intent)
 
-            // Limpar os campos de usuário e senha
-            editTextUsername.text.clear()
+            // Limpar os campos de E-mail e pin
+            editTextEmail.text.clear()
             editTextPassword.text.clear()
         }
     }

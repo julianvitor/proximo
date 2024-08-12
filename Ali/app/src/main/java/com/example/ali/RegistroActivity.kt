@@ -9,17 +9,20 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.button.MaterialButton
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.io.IOException
-import com.google.android.material.button.MaterialButton
+import java.util.UUID
+import java.util.Calendar
+
 
 class RegistroActivity : AppCompatActivity() {
 
     private lateinit var editTextNome: EditText
-    private lateinit var editTextUsuario: EditText
-    private lateinit var editTextSenha: EditText
+    private lateinit var editTextEmail: EditText
+    private lateinit var editTextPin: EditText
     private lateinit var editTextCnpj: EditText
     private lateinit var editTextNomeEmpresa: EditText
     private lateinit var buttonRegistrar: Button
@@ -34,8 +37,8 @@ class RegistroActivity : AppCompatActivity() {
 
         // Inicializar as views
         editTextNome = findViewById(R.id.editTextNome)
-        editTextUsuario = findViewById(R.id.editTextUsuario)
-        editTextSenha = findViewById(R.id.editTextSenha)
+        editTextEmail = findViewById(R.id.editTextEmail)
+        editTextPin = findViewById(R.id.editTextPin)
         editTextCnpj = findViewById(R.id.editTextCnpj)
         editTextNomeEmpresa = findViewById(R.id.editTextNomeEmpresa)
         buttonRegistrar = findViewById(R.id.buttonRegistrar)
@@ -48,41 +51,53 @@ class RegistroActivity : AppCompatActivity() {
             registrar()
         }
 
-        //botão voltar
+        // Botão voltar
         val buttonBack: MaterialButton = findViewById(R.id.buttonBack)
-        buttonBack.setOnClickListener{
+        buttonBack.setOnClickListener {
             onBackPressedDispatcher.onBackPressed()
         }
-
     }
 
     private fun registrar() {
         val nome = editTextNome.text.toString().trim()
-        val apelido = editTextUsuario.text.toString().trim()
-        val senha = editTextSenha.text.toString().trim()
+        val email = editTextEmail.text.toString().trim()
+        val pin = editTextPin.text.toString().trim()
         val cnpj = editTextCnpj.text.toString().trim()
         val nomeEmpresa = editTextNomeEmpresa.text.toString().trim()
 
         // Validar os campos
-        if (nome.isEmpty() || apelido.isEmpty() || senha.isEmpty() || cnpj.isEmpty() || nomeEmpresa.isEmpty()) {
+        if (nome.isEmpty() || email.isEmpty() || pin.isEmpty() || cnpj.isEmpty() || nomeEmpresa.isEmpty()) {
             Toast.makeText(this, "Por favor, preencha todos os campos", Toast.LENGTH_SHORT).show()
             return
         }
 
         try {
             // Verificar se o usuário já existe no arquivo JSON
-            if (usuarioExiste(apelido)) {
-                Toast.makeText(this, "Usuário já cadastrado. Por favor, escolha outro nome de usuário.", Toast.LENGTH_SHORT).show()
+            if (usuarioExiste(email)) {
+                Toast.makeText(this, "E-mail já cadastrado. Por favor, escolha outro E-mail.", Toast.LENGTH_SHORT).show()
                 return
             }
 
             // Criar um novo objeto de usuário
-            val novoUsuario = JSONObject()
-            novoUsuario.put("nome", nome)
-            novoUsuario.put("apelido", apelido)
-            novoUsuario.put("senha", senha)
-            novoUsuario.put("cnpj", cnpj)
-            novoUsuario.put("nome_empresa", nomeEmpresa)
+            val novoUsuario = JSONObject().apply {
+                put("id", UUID.randomUUID().toString())  // Adiciona um ID único
+                put("created_at", getDataHoraAtual())    // Adiciona a data e hora atual
+                put("updated_at", getDataHoraAtual())    // Adiciona a data e hora atual
+                put("cpf", null)
+                put("cnpj", cnpj)
+                put("commercial_name", null)
+                put("email", email)
+                put("isAdmin", false)
+                put("doTraining", false)
+                put("isQualified", false)
+                put("isLiabilityTermAccepted", false)
+                put("environments", JSONArray().put("EXPRESS"))
+                put("pin", pin)
+                put("status", "ACTIVE")
+                put("passwordChangeRequested", false)
+                put("companyId", UUID.randomUUID().toString())  // Adiciona um ID de empresa fictício
+                put("category", null)
+            }
 
             // Adicionar o novo usuário ao arquivo JSON de usuários
             adicionarUsuarioAoJSON(novoUsuario)
@@ -90,8 +105,8 @@ class RegistroActivity : AppCompatActivity() {
             Toast.makeText(this, "Registro bem-sucedido!", Toast.LENGTH_SHORT).show()
             // Limpar os campos após o registro bem-sucedido
             editTextNome.text.clear()
-            editTextUsuario.text.clear()
-            editTextSenha.text.clear()
+            editTextEmail.text.clear()
+            editTextPin.text.clear()
             editTextCnpj.text.clear()
             editTextNomeEmpresa.text.clear()
             val intent = Intent(this, MainActivity::class.java)
@@ -103,14 +118,14 @@ class RegistroActivity : AppCompatActivity() {
         }
     }
 
-    private fun usuarioExiste(apelido: String): Boolean {
+    private fun usuarioExiste(email: String): Boolean {
         val usuariosJson = loadJsonFromFile(dbHelper.usuariosFileName)
         usuariosJson?.let {
-            val usuariosArray = it.optJSONArray("usuarios")
+            val usuariosArray = it.optJSONArray("attributes")
             usuariosArray?.let {
                 for (i in 0 until usuariosArray.length()) {
                     val usuario = usuariosArray.optJSONObject(i)
-                    if (usuario.optString("apelido") == apelido) {
+                    if (usuario.optString("email") == email) {
                         return true
                     }
                 }
@@ -120,10 +135,12 @@ class RegistroActivity : AppCompatActivity() {
     }
 
     private fun adicionarUsuarioAoJSON(usuario: JSONObject) {
-        val usuariosJson = loadJsonFromFile(dbHelper.usuariosFileName) ?: JSONObject()
-        val usuariosArray = usuariosJson.optJSONArray("usuarios") ?: JSONArray()
+        val usuariosJson = loadJsonFromFile(dbHelper.usuariosFileName) ?: JSONObject().apply {
+            put("attributes", JSONArray())
+        }
+        val usuariosArray = usuariosJson.optJSONArray("attributes") ?: JSONArray()
         usuariosArray.put(usuario)
-        usuariosJson.put("usuarios", usuariosArray)
+        usuariosJson.put("attributes", usuariosArray)
         writeJsonToFile(usuariosJson.toString(), dbHelper.usuariosFileName)
     }
 
@@ -151,5 +168,11 @@ class RegistroActivity : AppCompatActivity() {
         } catch (e: IOException) {
             e.printStackTrace()
         }
+    }
+
+    private fun getDataHoraAtual(): String {
+        val calendar = Calendar.getInstance()
+        return "${calendar.get(Calendar.YEAR)}-${calendar.get(Calendar.MONTH) + 1}-${calendar.get(Calendar.DAY_OF_MONTH)} " +
+                "${calendar.get(Calendar.HOUR_OF_DAY)}:${calendar.get(Calendar.MINUTE)}:${calendar.get(Calendar.SECOND)}"
     }
 }

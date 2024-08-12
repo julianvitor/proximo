@@ -54,8 +54,8 @@ class AdminActivity : AppCompatActivity() {
 
             val diferencaTempo = calcularDiferencaTempo(retirada, devolucao)
             holder.tempoTextView.text = formatarTempo(diferencaTempo)
-            holder.cnpjTextView.text = "CNPJ: ${databaseHelper.getCnpjByNome(nome)}"
-            holder.nomeEmpresaTextView.text = "Nome da Empresa: ${databaseHelper.getNomeEmpresaByNome(nome)}"
+            holder.cnpjTextView.text = "CNPJ: ${databaseHelper.getCnpjByEmail(nome)}"
+            holder.nomeEmpresaTextView.text = "Nome da Empresa: ${databaseHelper.getNomeEmpresaByEmail(nome)}"
         }
 
         override fun getItemCount(): Int {

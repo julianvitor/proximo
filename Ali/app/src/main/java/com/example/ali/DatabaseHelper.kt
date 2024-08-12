@@ -43,38 +43,38 @@ class DatabaseHelper(context: Context) {
         }
     }
 
-    fun getCnpjByNome(nome: String): String {
-        val usosJson = loadJsonFromFile(usuariosFileName) ?: JSONObject()
-        val usosArray = usosJson.optJSONArray("usuarios") ?: JSONArray()
+    fun getCnpjByEmail(email: String): String {
+        val usuariosJson = loadJsonFromFile(usuariosFileName) ?: JSONObject()
+        val usuariosArray = usuariosJson.optJSONArray("attributes") ?: JSONArray()
 
-        for (i in 0 until usosArray.length()) {
-            val uso = usosArray.optJSONObject(i)
-            if (uso.optString("apelido") == nome) {
-                return uso.optString("cnpj", "CNPJ não disponível")
+        for (i in 0 until usuariosArray.length()) {
+            val usuario = usuariosArray.optJSONObject(i)
+            if (usuario.optString("email") == email) {
+                return usuario.optString("cnpj", "CNPJ não disponível")
             }
         }
         return "CNPJ não encontrado"
     }
 
-    fun getNomeEmpresaByNome(nome: String): String {
-        val usosJson = loadJsonFromFile(usuariosFileName) ?: JSONObject()
-        val usosArray = usosJson.optJSONArray("usuarios") ?: JSONArray()
+    fun getNomeEmpresaByEmail(email: String): String {
+        val usuariosJson = loadJsonFromFile(usuariosFileName) ?: JSONObject()
+        val usuariosArray = usuariosJson.optJSONArray("attributes") ?: JSONArray()
 
-        for (i in 0 until usosArray.length()) {
-            val uso = usosArray.optJSONObject(i)
-            if (uso.optString("apelido") == nome) {
-                return uso.optString("nome_empresa", "Nome da Empresa não disponível")
+        for (i in 0 until usuariosArray.length()) {
+            val usuario = usuariosArray.optJSONObject(i)
+            if (usuario.optString("email") == email) {
+                return usuario.optString("commercial_name", "Nome da Empresa não disponível")
             }
         }
         return "Nome da Empresa não encontrado"
     }
 
-    fun registrarUso(apelido: String, uid: String, doca: String) {
+    fun registrarUso(email: String, uid: String, doca: String) {
         val usosJson = loadJsonFromFile(usosFileName) ?: JSONObject()
         val usosArray = usosJson.optJSONArray("usos") ?: JSONArray()
 
         val novoUso = JSONObject()
-        novoUso.put("apelido", apelido)
+        novoUso.put("email", email)
         novoUso.put("retirada", getDataHoraAtual())
         novoUso.put("uid", uid)
         novoUso.put("doca", doca)
@@ -85,14 +85,14 @@ class DatabaseHelper(context: Context) {
         writeJsonToFile(usosJson.toString(), usosFileName)
     }
 
-    fun verificarCredenciais(apelido: String, senha: String): Boolean {
+    fun verificarCredenciais(email: String, pin: String): Boolean {
         val usuariosJson = loadJsonFromFile(usuariosFileName) ?: JSONObject()
-        val usuariosArray = usuariosJson.optJSONArray("usuarios") ?: JSONArray()
+        val usuariosArray = usuariosJson.optJSONArray("attributes") ?: JSONArray()
 
         // Verificar se há um usuário com as credenciais fornecidas
         for (i in 0 until usuariosArray.length()) {
             val usuario = usuariosArray.optJSONObject(i)
-            if (usuario.optString("apelido") == apelido && usuario.optString("senha") == senha) {
+            if (usuario.optString("email") == email && usuario.optString("pin") == pin) {
                 return true
             }
         }
@@ -107,9 +107,9 @@ class DatabaseHelper(context: Context) {
 
         for (i in 0 until usosArray.length()) {
             val uso = usosArray.optJSONObject(i)
-            val apelido = uso.optString("apelido")
+            val email = uso.optString("email")
             val retirada = uso.optString("retirada")
-            usuariosERetiradas.add(Pair(apelido, retirada))
+            usuariosERetiradas.add(Pair(email, retirada))
         }
 
         return usuariosERetiradas
@@ -123,20 +123,19 @@ class DatabaseHelper(context: Context) {
 
         for (i in 0 until usosArray.length()) {
             val uso = usosArray.optJSONObject(i)
-            val apelido = uso.optString("apelido")
+            val email = uso.optString("email")
             val retirada = uso.optString("retirada")
             val devolucao = uso.optString("devolucao", "") // Se não houver devolução, retorna uma string vazia
             val uid = uso.optString("uid")
 
             // Agora, em vez de CNPJ e nome da empresa separadamente, podemos concatenar essas informações
-            val cnpjENomeEmpresa = "${getCnpjByNome(apelido)} - ${getNomeEmpresaByNome(apelido)}"
+            val cnpjENomeEmpresa = "${getCnpjByEmail(email)} - ${getNomeEmpresaByEmail(email)}"
 
-            usuariosERetiradasDevolucao.add(Quadra(apelido, retirada, devolucao, cnpjENomeEmpresa))
+            usuariosERetiradasDevolucao.add(Quadra(email, retirada, devolucao, cnpjENomeEmpresa))
         }
 
         return usuariosERetiradasDevolucao
     }
-
 
     private fun loadJsonFromAsset(fileName: String): String? {
         return try {
@@ -201,8 +200,6 @@ class DatabaseHelper(context: Context) {
         }
     }
 
-
-
     private fun writeJsonToFile(jsonData: String, fileName: String) {
         try {
             val fileOutputStream = context.openFileOutput(fileName, Context.MODE_PRIVATE)
@@ -234,6 +231,4 @@ class DatabaseHelper(context: Context) {
         return "${calendar.get(Calendar.YEAR)}-${calendar.get(Calendar.MONTH) + 1}-${calendar.get(Calendar.DAY_OF_MONTH)} " +
                 "${calendar.get(Calendar.HOUR_OF_DAY)}:${calendar.get(Calendar.MINUTE)}:${calendar.get(Calendar.SECOND)}"
     }
-
-
 }
