@@ -11,6 +11,7 @@ import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 
+
 class MainActivity : AppCompatActivity() {
 
     private lateinit var editTextUsername: EditText
@@ -98,8 +99,14 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
+        // Iniciar o WebSocketService
         Intent(this, WebSocketService::class.java).also { intent ->
             bindService(intent, connection, Context.BIND_AUTO_CREATE)
+            startService(intent)
+        }
+
+        // Iniciar o SyncService
+        Intent(this, SyncService::class.java).also { intent ->
             startService(intent)
         }
     }

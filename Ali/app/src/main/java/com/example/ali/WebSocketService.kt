@@ -123,7 +123,7 @@ class WebSocketService() : Service(), Parcelable {
 
             else -> {
                 showToast("Mensagem recebida: $message")
-                conn.send("Mensagem recebida: $message")
+                //conn.send("Mensagem recebida: $message")
             }
         }
     }
@@ -156,7 +156,7 @@ class WebSocketService() : Service(), Parcelable {
         return NotificationCompat.Builder(this, channelId)
             .setContentTitle("WebSocket Server")
             .setContentText("O Servidor WebSocket está rodando")
-            .setSmallIcon(R.drawable.ic_notification) // Certifique-se de que o ícone está correto
+            .setSmallIcon(R.drawable.ic_websocket_notification) // Certifique-se de que o ícone está correto
             .build()
     }
 

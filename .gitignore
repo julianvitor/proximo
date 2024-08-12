@@ -367,3 +367,5 @@ pyrightconfig.json
 
 # android env
 /gradle.
+
+Ali/gradle.properties
