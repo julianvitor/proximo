@@ -5,12 +5,6 @@
     android:orientation="vertical"
     android:padding="8dp">
 
-    <TextView
-        android:id="@+id/timestampTextView"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Timestamp"
-        android:textStyle="bold" />
 
     <TextView
         android:id="@+id/macAddressTextView"
@@ -41,11 +35,5 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Firmware Version" />
-
-    <TextView
-        android:id="@+id/firmwareStatusTextView"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Firmware Status" />
 
 </LinearLayout>

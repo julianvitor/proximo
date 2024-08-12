@@ -10,13 +10,11 @@ import org.json.JSONObject
 class LogAdapter(private val logList: MutableList<JSONObject>) : RecyclerView.Adapter<LogAdapter.LogViewHolder>() {
 
     class LogViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val timestampTextView: TextView = itemView.findViewById(R.id.timestampTextView)
         val macAddressTextView: TextView = itemView.findViewById(R.id.macAddressTextView)
         val ipAddressTextView: TextView = itemView.findViewById(R.id.ipAddressTextView)
         val coreTemperatureTextView: TextView = itemView.findViewById(R.id.coreTemperatureTextView)
         val uptimeTextView: TextView = itemView.findViewById(R.id.uptimeTextView)
         val firmwareVersionTextView: TextView = itemView.findViewById(R.id.firmwareVersionTextView)
-        val firmwareStatusTextView: TextView = itemView.findViewById(R.id.firmwareStatusTextView)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): LogViewHolder {
@@ -25,21 +23,47 @@ class LogAdapter(private val logList: MutableList<JSONObject>) : RecyclerView.Ad
     }
 
     override fun onBindViewHolder(holder: LogViewHolder, position: Int) {
-        val log = logList[position].getJSONObject("log")
+        // Obtém o objeto JSON da lista
+        val log = logList[position].optJSONObject("log") ?: return
 
-        // Preenche as TextViews com os valores do JSON
-        holder.timestampTextView.text = log.getString("timestamp")
-        val deviceInfo = log.getJSONObject("deviceInfo")
-        holder.macAddressTextView.text = "MAC Address: ${deviceInfo.getString("macAddress")}"
-        holder.ipAddressTextView.text = "IP Address: ${deviceInfo.getString("ipAddress")}"
+        try {
+            // Verifica e preenche informações do dispositivo
+            if (log.has("deviceInfo")) {
+                val deviceInfo = log.getJSONObject("deviceInfo")
+                holder.macAddressTextView.text = "MAC Address: ${deviceInfo.optString("macAddress", "N/A")}"
+                holder.ipAddressTextView.text = "IP Address: ${deviceInfo.optString("ipAddress", "N/A")}"
+            } else {
+                holder.macAddressTextView.text = "MAC Address: N/A"
+                holder.ipAddressTextView.text = "IP Address: N/A"
+            }
 
-        val systemStatus = log.getJSONObject("systemStatus")
-        holder.coreTemperatureTextView.text = "Core Temperature: ${systemStatus.getDouble("coreTemperature")} °C"
-        holder.uptimeTextView.text = "Uptime: ${systemStatus.getString("uptime")}"
+            // Verifica e preenche o status do sistema
+            if (log.has("systemStatus")) {
+                val systemStatus = log.getJSONObject("systemStatus")
+                holder.coreTemperatureTextView.text = "Core Temperature: ${systemStatus.optDouble("coreTemperature", 0.0)} °C"
+                holder.uptimeTextView.text = "Uptime: ${systemStatus.optString("uptime", "N/A")}"
+            } else {
+                holder.coreTemperatureTextView.text = "Core Temperature: N/A"
+                holder.uptimeTextView.text = "Uptime: N/A"
+            }
 
-        val pn532Firmware = log.getJSONObject("pn532Firmware")
-        holder.firmwareVersionTextView.text = "Firmware Version: ${pn532Firmware.getString("version")}"
-        holder.firmwareStatusTextView.text = "Firmware Status: ${pn532Firmware.getString("status")}"
+            // Verifica e preenche a versão do firmware PN532
+            if (log.has("pn532Firmware")) {
+                val pn532 = log.getJSONObject("pn532Firmware")
+                holder.firmwareVersionTextView.text = "Pn532 Firmware Version: ${pn532.optString("version", "N/A")}"
+            } else {
+                holder.firmwareVersionTextView.text = "Pn532 Firmware Version: N/A"
+            }
+        } catch (e: Exception) {
+            // Tratar exceções que possam ocorrer ao acessar dados do JSON
+            e.printStackTrace()
+            // Exibir uma mensagem de erro genérica ou definir valores padrão
+            holder.macAddressTextView.text = "MAC Address: Não informado"
+            holder.ipAddressTextView.text = "IP Address: Não informado"
+            holder.coreTemperatureTextView.text = "Core Temperature: Não informado"
+            holder.uptimeTextView.text = "Uptime: Não informado"
+            holder.firmwareVersionTextView.text = "Pn532 Firmware Version: Não informado"
+        }
     }
 
     override fun getItemCount(): Int {

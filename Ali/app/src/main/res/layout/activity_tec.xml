@@ -38,6 +38,18 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp" />
 
+        <!--botão apagar log-->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonDeleteLog"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Apagar Log"
+            android:layout_gravity="center_horizontal"
+            android:background="@drawable/button_submit"
+            android:layout_marginTop="20dp"
+            app:backgroundTint="@color/button_background_color"
+            android:textSize="18sp" />
+
         <!--botão voltar -->
         <com.google.android.material.button.MaterialButton
             android:text="Voltar"

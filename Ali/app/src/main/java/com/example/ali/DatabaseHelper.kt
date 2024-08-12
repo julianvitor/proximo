@@ -183,6 +183,26 @@ class DatabaseHelper(context: Context) {
         }
     }
 
+    fun deleteFile(fileName: String) {
+        val file = File(context.filesDir, fileName)
+
+        if (file.exists()) {
+            // Tenta deletar o arquivo
+            val deleted = file.delete()
+
+            // Verifica se a exclusão foi bem-sucedida
+            if (deleted) {
+                println("Arquivo '$fileName' deletado com sucesso.")
+            } else {
+                println("Falha ao deletar o arquivo '$fileName'.")
+            }
+        } else {
+            println("Arquivo '$fileName' não encontrado.")
+        }
+    }
+
+
+
     private fun writeJsonToFile(jsonData: String, fileName: String) {
         try {
             val fileOutputStream = context.openFileOutput(fileName, Context.MODE_PRIVATE)

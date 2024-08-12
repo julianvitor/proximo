@@ -16,8 +16,11 @@ import com.google.android.material.button.MaterialButton
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import kotlinx.coroutines.*
 
 class TecActivity : AppCompatActivity() {
+
+    private var dbHelper: DatabaseHelper? = null
 
     private var webSocketService: WebSocketService? = null
     private var isBound = false
@@ -51,9 +54,10 @@ class TecActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_tec)
-        setupUI()
         connectToWebSocketService()
-        loadLogData()
+        dbHelper = DatabaseHelper(this)
+        setupUI()
+
     }
 
     override fun onResume() {
@@ -78,14 +82,24 @@ class TecActivity : AppCompatActivity() {
     private fun setupUI() {
         val logButton: Button = findViewById(R.id.buttonGenerateLog)
         logButton.setOnClickListener {
-            // Aqui você pode adicionar lógica para gerar um novo log
-            // e atualizar a RecyclerView
-            loadLogData()
+            CoroutineScope(Dispatchers.Main).launch {
+                sendMessage("log")
+
+                // Espera 3 segundos
+                delay(3000)
+
+                loadLogData()
+            }
         }
 
         val buttonBack: Button = findViewById(R.id.buttonBack)
         buttonBack.setOnClickListener {
             onBackPressedDispatcher.onBackPressed()
+        }
+
+        val deleteLogButton: Button = findViewById(R.id.buttonDeleteLog)
+        deleteLogButton.setOnClickListener {
+            deleteLogData()
         }
 
         logRecyclerView = findViewById(R.id.log_recycler_view)
@@ -120,6 +134,25 @@ class TecActivity : AppCompatActivity() {
             }
         } else {
             showToast("Arquivo de log não encontrado")
+        }
+    }
+
+    private fun deleteLogData() {
+        // Apaga o arquivo de log
+        dbHelper?.deleteFile("log.json")
+        // Atualiza a exibição da RecyclerView
+        logList.clear()  // Limpa a lista de logs
+        logAdapter.notifyDataSetChanged()  // Notifica o adaptador que os dados mudaram
+        showToast("Log Apagado")  // Exibe uma mensagem de toast
+    }
+
+    // Enviar mensagem via WebSocket
+    private fun sendMessage(message: String) {
+        if (isBound) {
+            webSocketService?.broadcast(message)
+            showToast("Mensagem enviada: $message")  // Usando template de string para interpolação
+        } else {
+            showToast("Serviço WebSocket não vinculado")
         }
     }
 
