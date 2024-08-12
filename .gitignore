@@ -366,4 +366,4 @@ pyrightconfig.json
 .ferramentas_proximo/
 
 # android env
-/gradle.properties
+/gradle.
