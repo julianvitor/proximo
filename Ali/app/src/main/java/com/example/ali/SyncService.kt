@@ -1,5 +1,6 @@
 package com.example.ali
 
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -38,9 +39,10 @@ class SyncService : Service() {
         return binder
     }
 
+    @SuppressLint("ForegroundServiceType")
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val notification = createNotification()
-        startForeground(1, notification)
+        startForeground(2, notification)
         return START_STICKY
     }
 
