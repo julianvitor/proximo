@@ -63,7 +63,7 @@
             </intent-filter>
         </activity>
 
-        <!-- com.example.ali.DashboardActivity -->
+        <!-- com.example.com.proximo.ali.DashboardActivity -->
         <activity
             android:name=".DashboardActivity"
             android:exported="true">
