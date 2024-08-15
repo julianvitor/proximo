@@ -23,3 +23,8 @@ Observações: Renomear pasta NDEF-master para NDEF
 
 TickTwo  
 Versão: 4.4.0 
+
+ArduinoJson
+Versão : 7.1.0
+Autor: Benoit blanchon
+Repositório: https://github.com/bblanchon/ArduinoJson
