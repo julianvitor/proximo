@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="8dp">
+
+
+    <TextView
+        android:id="@+id/macAddressTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="MAC Address" />
+
+    <TextView
+        android:id="@+id/ipAddressTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="IP Address" />
+
+    <TextView
+        android:id="@+id/coreTemperatureTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Core Temperature" />
+
+    <TextView
+        android:id="@+id/uptimeTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Uptime" />
+
+    <TextView
+        android:id="@+id/firmwareVersionTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Firmware Version" />
+
+</LinearLayout>

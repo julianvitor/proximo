@@ -11,17 +11,21 @@
 // A posição e ordem de estruturas, funções e outros devem ser mantida de acordo com suas funções, em resumo: próximo o que é semelhante.
 #include <Arduino.h>
 #include <ETH.h>
-#include <WebSocketsServer.h>
+#include <WebSocketsClient.h>
 #include <PN532_I2C.h>
 #include <PN532.h>
 #include "TickTwo.h"
 #include <Wire.h>
+#include <ArduinoJson.h> // Inclua a biblioteca ArduinoJson
+#include "esp_system.h"
+
 
 // Definição dos pinos
-#define RELE1_PIN 2 // Pino digital conectado ao primeiro relé
-#define RELE2_PIN 4 // Pino digital conectado ao segundo relé
-#define I2C_SCL 32  // Pino i2c clock RFID
-#define I2C_SDA 33  // Pino i2c data RFID
+const int RELE1_PIN = 2; // Pino digital conectado ao primeiro relé
+const int RELE2_PIN = 4; // Pino digital conectado ao segundo relé
+const int I2C_SCL = 32;  // Pino i2c clock RFID
+const int I2C_SDA = 33;  // Pino i2c data RFID
+const int PN532_RESET_PIN = 15;   // Reset pin RFID
 
 // Ethernet
 /* 
@@ -37,12 +41,13 @@
 #define ETH_MDC_PIN     23 // Pin# of the I²C clock signal for the Ethernet PHY
 #define ETH_MDIO_PIN    18 // Pin# of the I²C IO signal for the Ethernet PHY
 
-WebSocketsServer webSocket = WebSocketsServer(8080); // WebSocket server on port 81
+WebSocketsClient webSocket; // WebSocket client
 
 //Estados
 bool ethernet_conexao = false;
 bool rele1Ativo = false;
 bool rele2Ativo = false;
+bool rsto_ativo = false;
 
 int DURACAO_RELE = 30000;// Duração do rele ativado em milissegundos
 
@@ -51,13 +56,13 @@ String uidAnterior = "";
 String uidAtual = "";
 
 // Protótipos de funções
-void configurarPn532();
 void iniciarEthernet();
-// Prototipos de callbacks.
 void gerenciar_erros_callback();
 void ler_rfid_callback();
 void desativar_rele1_callback();
 void desativar_rele2_callback();
+void reiniciar_pn532_callback();
+void iniciarPn532_callback(int I2C_SDA, int I2C_SCL);// Iniciar o rsto, instancia o PN532 e inicia a comunicacao em modo leitura
 
 // Instanciar sensor
 PN532_I2C pn532_i2c(Wire);
@@ -65,9 +70,12 @@ PN532 nfc(pn532_i2c);
 
 // Instanciar os timers(tasks)
 TickTwo timerLerRfid(ler_rfid_callback, 6000, 0, MILLIS);
+TickTwo timerReiniciarPn532(reiniciar_pn532_callback, 300000, 0, MILLIS);// Reinicia o PN532 a cada 300 segundos / 5 minutos
+TickTwo timerAtivarRsto([]() { iniciarPn532_callback(I2C_SDA, I2C_SCL); }, 100, 1, MILLIS);//necessario uso de função lambda para passar os parametros
 TickTwo timerGerenciarErros(gerenciar_erros_callback, 2000, 0, MILLIS);
 TickTwo timerDesativarRele1(desativar_rele1_callback, DURACAO_RELE, 1, MILLIS);
 TickTwo timerDesativarRele2(desativar_rele2_callback, DURACAO_RELE, 1, MILLIS);
+
 
 void WiFiEvent(WiFiEvent_t event) {
   switch (event) {
@@ -92,7 +100,7 @@ void WiFiEvent(WiFiEvent_t event) {
   }
 }
 // Função que trata os eventos do WebSocket
-void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
+void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
     switch(type) {
       case WStype_TEXT:
         if (strcmp((char*)payload, "ativar 1") == 0) {
@@ -106,19 +114,15 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
           if (versiondata) {
             String firmware = "PN532 Firmware: ";
             firmware += String(versiondata);
-            webSocket.broadcastTXT(firmware); // Enviar versão do firmware para o cliente
+            webSocket.sendTXT(firmware); // Enviar versão do firmware para o cliente
           } 
           else {
-            webSocket.broadcastTXT("Erro: PN532 não encontrado"); // PN532 não encontrado, enviar mensagem de erro
+            webSocket.sendTXT("Erro: PN532 não encontrado"); // PN532 não encontrado, enviar mensagem de erro
           }
         }
         else if (strcmp((char*)payload, "log") == 0) {
-          String logMessage = "Número de clientes conectados: ";
-          logMessage += String(webSocket.connectedClients());
-          webSocket.broadcastTXT(logMessage); // Enviar número de clientes conectados para o cliente
+          enviarLogJson();
         }
-        // Eco das mensagens recebidas para todos os clientes
-        webSocket.broadcastTXT((char*)payload, length);
         break;
       default:
         break;
@@ -130,6 +134,14 @@ void gerenciar_erros_callback(){
     // Se não estiver conectado, tenta inicializar a conexão Ethernet novamente
     ETH.begin(ETH_ADDR, ETH_POWER_PIN, ETH_MDC_PIN, ETH_MDIO_PIN, ETH_TYPE, ETH_CLK_MODE);
   }
+}
+
+void reiniciar_pn532_callback(){
+  // Reinicia o PN532
+  digitalWrite(PN532_RESET_PIN, LOW);// pn532 entra em modo suspensão
+  rsto_ativo = false;
+  timerAtivarRsto.start();// Inicia e configura o pn532 no tempo determinado
+
 }
 
 void ler_rfid_callback() {
@@ -151,13 +163,13 @@ void ler_rfid_callback() {
     //verificar se o UID mudou ou se é a primeira vez que é lido
     if (uidAtual!= uidAnterior || uidAtual == "") {
       uidAnterior = uidAtual;
-      webSocket.broadcastTXT("inserido:" + uidAtual);    // Envia o UID para todos os clientes conectados via WebSocket
+      webSocket.sendTXT("inserido:" + uidAtual);    // Envia o UID para todos os clientes conectados via WebSocket
     }
   }
   // Se não foi encontrado um cartão RFID, verifica se o ultimo UID lido foi diferente de vazio
   else {
     if (uidAnterior!= "") {
-      webSocket.broadcastTXT("removido:" + uidAnterior); // Envia o UID para todos os clientes conectados via WebSocket
+      webSocket.sendTXT("removido:" + uidAnterior); // Envia o UID para todos os clientes conectados via WebSocket
       uidAnterior = "";
     }
   }
@@ -179,7 +191,6 @@ void ativarRele() {
     timerDesativarRele1.start();
 
 }
-
 void ativarRele2() {
     digitalWrite(RELE2_PIN, LOW);
     rele2Ativo = true;
@@ -193,7 +204,11 @@ void iniciarEthernet(){
 
 }
 
-void configurarPn532() {
+void iniciarPn532_callback(int I2C_SDA, int I2C_SCL) {
+  digitalWrite(PN532_RESET_PIN, HIGH);
+  rsto_ativo = true;
+  Wire.begin(I2C_SDA, I2C_SCL);// Inicializa a interface I2C com os pinos SDA e SCL.
+  nfc.begin();// Inicializa o módulo PN532
   uint32_t versiondata = nfc.getFirmwareVersion();
   if (!versiondata) {} 
   else {
@@ -201,45 +216,85 @@ void configurarPn532() {
   }
 }
 
-void inicializarReles() {
+void inicializarGPIOS() {
   pinMode(RELE1_PIN, OUTPUT);
   pinMode(RELE2_PIN, OUTPUT); 
+  pinMode(PN532_RESET_PIN, OUTPUT);
 }
 
 void testarReles() {
   digitalWrite(RELE1_PIN, LOW);
-  delay(3000);
-  digitalWrite(RELE1_PIN, HIGH);
-  delay(1000);
   digitalWrite(RELE2_PIN, LOW);
   delay(3000);
   digitalWrite(RELE2_PIN, HIGH);
+  digitalWrite(RELE1_PIN, HIGH);
+}
+
+String obterEnderecoMAC() {
+  String macString = ETH.macAddress();
+  return macString;
+}
+
+void enviarLogJson() {
+  // Criar o objeto JSON
+  StaticJsonDocument<1024> jsonDoc;
+
+  String macAddress = obterEnderecoMAC();
+
+  // Adicionar dados ao JSON
+  jsonDoc["log"]["timestamp"] = "2024-08-10T14:32:00Z";
+  
+  // Obter dados de rede
+  String ipAddress = WiFi.localIP().toString();
+  jsonDoc["log"]["deviceInfo"]["macAddress"] = macAddress;
+  jsonDoc["log"]["deviceInfo"]["ipAddress"] = ipAddress;
+
+  // Obter a temperatura do núcleo
+  float temperature = 40.0; // obter temperatura do nucleo xtensa
+  jsonDoc["log"]["systemStatus"]["coreTemperature"] = temperature;
+
+  // Obter o tempo de atividade
+  unsigned long uptime = millis() / 1000;
+  jsonDoc["log"]["systemStatus"]["uptime"] = String(uptime / 86400) + " days " + String((uptime % 86400) / 3600) + " hours " + String((uptime % 3600) / 60) + " minutes";
+
+  // Obter a versão do firmware do PN532
+  uint32_t versiondata = nfc.getFirmwareVersion();
+  jsonDoc["log"]["pn532Firmware"]["version"] = String(versiondata);
+  jsonDoc["log"]["pn532Firmware"]["status"] = (versiondata > 0) ? "OK" : "Erro";
+
+  // Converter JSON para String
+  String jsonString;
+  serializeJson(jsonDoc, jsonString);
+
+  // Enviar JSON para todos os clientes conectados
+  webSocket.sendTXT(jsonString);
 }
 
 void setup() {
   btStop();// desativar o Bluetooth
-  inicializarReles();
+  inicializarGPIOS();
   testarReles();
-
-  Wire.begin(I2C_SDA, I2C_SCL);// Inicializa a interface I2C com os pinos SDA e SCL.
-  nfc.begin();// Inicializa o módulo PN532
-  configurarPn532(); // Configura o PN532 para operar no modo de leitura.
-
-
+  iniciarPn532_callback(I2C_SDA, I2C_SCL); // Configura o PN532 para operar no modo de leitura.
   iniciarEthernet();
-  webSocket.begin();
+
+  webSocket.begin("192.168.1.150", 8080,"/");
   webSocket.onEvent(webSocketEvent);
 
   // Iniciar a tasks
   timerLerRfid.start();
   timerGerenciarErros.start();
+  timerReiniciarPn532.start();
+  webSocket.setReconnectInterval(1000);
 }
 
 void loop() {
+  // Tasks do TickTwo 
   timerGerenciarErros.update();
   timerLerRfid.update();
   timerDesativarRele1.update();
   timerDesativarRele2.update();
+  timerReiniciarPn532.update();
+  timerAtivarRsto.update();
 
   // Executa o loop do WebSocketsServer
   webSocket.loop();
