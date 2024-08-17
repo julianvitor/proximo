@@ -4,14 +4,14 @@ Proximo é um projeto composto por dois softwares: ALi para dispositivos Android
 
 ## Descrição
 
-O Proximo oferece uma solução de controle de acesso simples e fácil de usar, permitindo que os usuários interajam com dispositivos de gatilho de trava de forma conveniente e segura. O software ALi é projetado para funcionar em dispositivos Android, proporcionando uma interface intuitiva para os usuários finais. O firmware para hardware baseado no WT32 permite a integração com sistemas de segurança física.
+O Proximo oferece uma solução de controle de acesso simples e fácil de usar, permitindo que os usuários interajam com dispositivos de gatilho de trava de forma conveniente e segura. O software ALi é projetado para funcionar em dispositivos Android, proporcionando uma interface intuitiva para os usuários finais. O firmware para hardware baseado no WT32-ETH01.
 
 ## Funcionalidades
 
 - Controle de acesso via dispositivos Android (ALi) e hardware baseado no WT32(ESP32 ETHERNET).
 - Integração com dispositivos de gatilho (hardware)
 - Interface de usuário ALi para sistema Android embarcado.
-- Comunicação entre o ALi e o hardware via WebSocket.
+- Comunicação entre o ALi e o hardware em tempo real por WebSocket.
 
 ## Instalação
 
@@ -24,6 +24,10 @@ O Proximo oferece uma solução de controle de acesso simples e fácil de usar, 
 3. Selecione a opção desejada para interagir com o gatilho de trava.
 4. Faça a devolução do RFID no hardware.
 5. O painel Administrador padrão é acessado com **Usuário: admin**, **Senha: admin**.
+
+## Documentação de desenvolvimento 
+[Documentação geral](https://github.com/julianvitor/proximo/tree/dev/documentacao_projeto)
+[Documentação comunicação local](https://github.com/julianvitor/proximo/tree/main/documentacao_projeto/protocolo_pai_filho)
 
 ## Autores
 
