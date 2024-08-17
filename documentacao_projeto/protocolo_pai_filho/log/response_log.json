@@ -1,0 +1,18 @@
+{
+    "response_log": {
+        "timestamp": "2024-08-10T14:32:00Z", 
+        "deviceInfo": {
+            "macAddress": "00:1A:2B:3C:4D:5E", 
+            "ipAddress": "192.168.1.10"        
+        },
+        "systemStatus": {
+            "coreTemperature": 65.3,           
+            "uptime": "3 days 14 hours 32 minutes" 
+        },
+        "pn532Firmware": {
+            "version": "1.6.8",                
+            "status": "OK"                    
+        }
+    },
+    "requestId": "12345678"
+}

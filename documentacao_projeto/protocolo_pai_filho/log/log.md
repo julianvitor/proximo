@@ -1,10 +1,20 @@
 ### Formato do JSON
 
-O JSON deve ser enviado no seguinte formato:
+A quequisição do pai deve ser no seguinte formato:
 
 ```json
 {
-    "log": {
+    "accio_log": {},
+    "requestId": "12345678"  // ID para confirmação
+}
+
+```
+
+A resposta do filho deve ser no seguinte formato:
+
+```json
+{
+    "response_log": {
         "timestamp": "2024-08-10T14:32:00Z",  // ISO 8601 format
         "deviceInfo": {
             "macAddress": "00:1A:2B:3C:4D:5E", // String no formato XX:XX:XX:XX:XX:XX
@@ -18,10 +28,14 @@ O JSON deve ser enviado no seguinte formato:
             "version": "1.6.8",                // Versão do firmware (string)
             "status": "OK"                     // Status do firmware (string)
         }
-    }
+    },
+    "requestId": "12345678"// ID para confirmação
 }
 
 ```
+
+
+
 ### Descrição dos Campos
 
 - **log** (objeto): O objeto principal contendo os dados do log.
@@ -35,6 +49,7 @@ O JSON deve ser enviado no seguinte formato:
     - **pn532Firmware** (objeto): Informações sobre o firmware PN532.
         - **version** (string): Versão do firmware.
         - **status** (string): Status atual do firmware (ex: "OK", "Error").
+    - **requestId** (string): Identificador único para a confirmação da solicitação.
 
 ### Erros Comuns e Tratamento
 
