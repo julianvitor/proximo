@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -17,75 +16,19 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
             android:layout_marginBottom="16dp"
-            android:text="Baias"
+            android:text="Máquinas"
             android:textSize="24sp"
             android:textStyle="bold" />
 
-        <!-- Baias -->
-        <LinearLayout
+        <!-- GridLayout for dynamic CardViews -->
+        <GridLayout
+            android:id="@+id/gridLayoutMachines"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/bay1"
-                    android:layout_width="0dp"
-                    android:layout_height="80dp"
-                    android:layout_marginBottom="10dp"
-                    android:layout_marginTop="5dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/button_submit"
-                    android:text="Dock 1"
-                    android:textSize="18sp"
-                    app:backgroundTint="@color/button_background_color"
-                    />
-
-                <TextView
-                    android:id="@+id/textViewBay1Status"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:text="Indisponível"
-                    android:textColor="@android:color/darker_gray"
-                    android:textSize="16sp" />
-
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/bay2"
-                    android:layout_width="0dp"
-                    android:layout_height="80dp"
-                    android:layout_marginBottom="8dp"
-                    android:layout_marginTop="5dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/button_submit"
-                    android:text="Dock 2"
-                    android:textSize="18sp"
-                    app:backgroundTint="@color/button_background_color"
-                    />
-
-                <TextView
-                    android:id="@+id/textViewBay2Status"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:text="Indisponível"
-                    android:textColor="@android:color/darker_gray"
-                    android:textSize="16sp" />
-            </LinearLayout>
-        </LinearLayout>
+            android:layout_marginBottom="16dp"
+            android:columnCount="2"
+            android:rowCount="wrap_content"
+            android:orientation="horizontal" />
 
         <!-- Contador regressivo -->
         <TextView
@@ -112,7 +55,5 @@
             app:backgroundTint="@color/button_back_background_color" />
 
     </LinearLayout>
-
-
 
 </ScrollView>

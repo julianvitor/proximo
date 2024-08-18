@@ -1,0 +1,5 @@
+nova dashboard -> Layout XML: Usa um GridLayout para disposição dinâmica dos CardView.
+item_machine_card.xml: Layout básico do CardView com ImageView e TextView.
+MainActivity.kt: Código Kotlin para adicionar CardView dinamicamente ao GridLayout. As imagens são carregadas da pasta local.
+
+
