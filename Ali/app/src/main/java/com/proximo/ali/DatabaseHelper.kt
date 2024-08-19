@@ -170,6 +170,40 @@ class DatabaseHelper(context: Context) {
         }
     }
 
+    fun addToMaquinasPresentes(machineJson: JSONObject) {
+        Log.d("DatabaseHelper", "Adicionando máquina ao arquivo maquinasPresentes.json")
+
+        val fileName = "maquinasPresentes.json"
+        val file = File(context.filesDir, fileName)
+        try {
+            if (file.exists()) {
+                // Ler o conteúdo existente
+                val existingContent = file.readText()
+                val jsonArray = if (existingContent.isNotEmpty()) {
+                    JSONArray(existingContent)
+                } else {
+                    JSONArray()
+                }
+
+                // Adicionar nova máquina
+                jsonArray.put(machineJson)
+
+                // Escrever o conteúdo atualizado
+                writeJsonToFile(jsonArray.toString(4), fileName)
+            } else {
+                // Criar um novo arquivo com a primeira máquina
+                val jsonArray = JSONArray()
+                jsonArray.put(machineJson)
+
+                // Escrever o novo arquivo
+                writeJsonToFile(jsonArray.toString(4), fileName)
+            }
+        } catch (e: IOException) {
+            Log.e("DatabaseHelper", "Erro ao adicionar máquina ao arquivo maquinasPresentes.json", e)
+        }
+    }
+
+
     fun addLogToFile(logJson: JSONObject) {
         Log.d("DatabaseHelper", "Adicionando log ao arquivo log.json")
 

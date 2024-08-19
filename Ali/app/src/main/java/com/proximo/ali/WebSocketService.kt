@@ -79,14 +79,15 @@ class WebSocketService() : Service(), Parcelable {
     // Manipulação de mensagens WebSocket
     private fun handleWebSocketMessage(message: String, conn: WebSocket) {
         when {
-            //inserção
+            // inserção
             message.startsWith("inserido:") -> {
                 val uid = message.substringAfter(":")
                 dbHelper?.registrarDevolucao(uid)
                 showToast("Sucesso: devolvido")
                 conn.send("Sucesso: devolvido")
             }
-            //remoção
+
+            // remoção
             message.startsWith("removido:") -> {
                 val uid = message.substringAfter(":")
                 if (currentUser == null) {
@@ -103,7 +104,8 @@ class WebSocketService() : Service(), Parcelable {
                     sendBroadcast(Intent("com.example.com.proximo.ali.ACTION_SUCCESS_REMOVIDO"))
                 }
             }
-            //json
+
+            // log
             message.startsWith("{") -> {
                 try {
                     val jsonObject = JSONObject(message)
@@ -120,6 +122,19 @@ class WebSocketService() : Service(), Parcelable {
                     conn.send("Erro ao processar o JSON")
                 }
             }
+
+            // Resposta de máquina (JSON accio_machine_response)
+            message.startsWith("{") && message.contains("\"accio_machine_response\":") -> {
+                try {
+                    val jsonObject = JSONObject(message)
+                    dbHelper?.addToMaquinasPresentes(jsonObject)
+                    showToast("Informações de máquina salvas com sucesso")
+                } catch (e: Exception) {
+                    showToast("Erro ao processar o JSON")
+                    //conn.send("Erro ao processar o JSON")
+                }
+            }
+
 
             else -> {
                 showToast("Mensagem recebida: $message")
@@ -177,7 +192,7 @@ class WebSocketService() : Service(), Parcelable {
         }
 
         override fun onClose(conn: WebSocket, code: Int, reason: String, remote: Boolean) {
-            // Ação quando um cliente desconecta
+            service.showToast("Cliente desconectado")
         }
 
         override fun onMessage(conn: WebSocket, message: String) {
@@ -190,7 +205,7 @@ class WebSocketService() : Service(), Parcelable {
         }
 
         override fun onStart() {
-            // Ação quando o servidor começa a rodar
+            service.showToast("Servidor WebSocket iniciado ")
         }
     }
 

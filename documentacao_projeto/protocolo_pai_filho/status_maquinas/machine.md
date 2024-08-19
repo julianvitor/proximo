@@ -14,12 +14,14 @@ A resposta do filho deve ser no seguinte formato:
 
 ```json
 {
-    
-    "machineId": "UID_RFID_1234567890",  // UID de RFID do dispositivo
-    "childId": "CA:FE:CA:FE:CA:FE",  // Endereço MAC do filho
+    "accio_machine_response":{
+        "CA:FE:CA:FE:CA:FE":{ // Endereço MAC do filho
+            "machineId": "UID_RFID_1234567890",  // tag rfid da maquina
+            "childId": "CA:FE:CA:FE:CA:FE",  // Endereço MAC do filho
+        }
+    },
     "requestId": "12345678"  // ID para confirmação
 }
-
 
 ```
 
@@ -30,6 +32,7 @@ A resposta do filho deve ser no seguinte formato:
 - **requestId** (string): Identificador único para a confirmação da solicitação.
 
 #### Response 
+- **accio_machine_response** (objeto): Objeto principal da resposta.
 - **machineId** (string): UID de RFID do dispositivo.
 - **childId** (string): Identificador único associado ao filho.
 - **requestId** (string): Identificador único para a confirmação da solicitação.

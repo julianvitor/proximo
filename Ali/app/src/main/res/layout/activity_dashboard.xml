@@ -27,9 +27,7 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
             android:columnCount="2"
-            android:rowCount="wrap_content"
             android:orientation="horizontal" />
-
         <!-- Contador regressivo -->
         <TextView
             android:id="@+id/countdownTextView"

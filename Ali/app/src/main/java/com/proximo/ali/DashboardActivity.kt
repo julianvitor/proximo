@@ -13,6 +13,8 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.button.MaterialButton
+import org.json.JSONObject
+
 
 class DashboardActivity : AppCompatActivity() {
 
@@ -21,7 +23,7 @@ class DashboardActivity : AppCompatActivity() {
     private var doca: String? = null
     private var apelido: String? = null
     private var countdownBotao: Int = 30
-    private var countdownGeral: Int = 60
+    private var countdownGeral: Int = 120
     private lateinit var countdownTextView: TextView
     private var countdownHandler: Handler = Handler(Looper.getMainLooper())
     private var countdownGeralHandler: Handler = Handler(Looper.getMainLooper())
@@ -59,14 +61,22 @@ class DashboardActivity : AppCompatActivity() {
         dbHelper = DatabaseHelper(this)
         countdownTextView = findViewById(R.id.countdownTextView)
 
-        setupUI()
-        connectToWebSocketService()
-        startGeneralCountdown(countdownGeral)
+        requisitarMaquinas()// Requisita as maquinas aos filhos e salva em maquinasPresentes.json DEVO MESCLAR AS MAQUINAS COM O JSON RECEBIDO DA API DE MAQUINAS
+        // Adiciona um delay antes de chamar outras funções
+        Handler(Looper.getMainLooper()).postDelayed({
+            loadMachines()
+            setupUI()
+            connectToWebSocketService()
+            startGeneralCountdown(countdownGeral)
+        }, 2000)
     }
 
     override fun onResume() {
         super.onResume()
-        registerReceiver(broadcastReceiver, IntentFilter("com.example.com.proximo.ali.ACTION_SUCCESS_REMOVIDO"))
+        registerReceiver(
+            broadcastReceiver,
+            IntentFilter("com.example.com.proximo.ali.ACTION_SUCCESS_REMOVIDO")
+        )
     }
 
     override fun onPause() {
@@ -84,24 +94,10 @@ class DashboardActivity : AppCompatActivity() {
         countdownGeralHandler.removeCallbacksAndMessages(null)
     }
 
+
     // Configuração da interface do usuário
     private fun setupUI() {
-        val bay1Button: Button = findViewById(R.id.bay1)
-        val bay2Button: Button = findViewById(R.id.bay2)
         val buttonBack: MaterialButton = findViewById(R.id.buttonBack)
-
-        bay1Button.setOnClickListener {
-            startButtonCountdown(countdownBotao)
-            sendMessage("ativar 1")
-            doca = "1"
-        }
-
-        bay2Button.setOnClickListener {
-            startButtonCountdown(countdownBotao)
-            sendMessage("ativar 2")
-            doca = "2"
-        }
-
         buttonBack.setOnClickListener {
             onBackPressedDispatcher.onBackPressed()
         }
@@ -160,20 +156,34 @@ class DashboardActivity : AppCompatActivity() {
             webSocketService?.broadcast(message)
             showMessageSent(message)
         } else {
-            showToast("Serviço WebSocket não vinculado")
+            showToast("Erro: Serviço WebsocketService não vinculado")
         }
+    }
+
+    private fun requisitarMaquinas() {
+        val accioMachine = JSONObject().apply {
+            put("accio_machine", JSONObject()) // Objeto vazio
+            put("requestId", 12345678) // ID para confirmação
+        }
+        showToast("Requisitando máquinas...")
+        sendMessage(accioMachine.toString()) // Corrigir o envio da mensagem para o formato String
+    }
+
+
+    private fun loadMachines() {
+
     }
 
     // Exibir mensagem enviada
     private fun showMessageSent(message: String) {
-        handler.post {
+        Handler(Looper.getMainLooper()).post {
             Toast.makeText(this, "Mensagem enviada: $message", Toast.LENGTH_SHORT).show()
         }
     }
 
     // Exibir Toast
     private fun showToast(message: String) {
-        handler.post {
+        Handler(Looper.getMainLooper()).post {
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         }
     }
