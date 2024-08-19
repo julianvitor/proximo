@@ -10,6 +10,8 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import android.util.Log
+
 
 
 class MainActivity : AppCompatActivity() {
@@ -42,8 +44,18 @@ class MainActivity : AppCompatActivity() {
         editTextEmail = findViewById(R.id.editTextEmail)
         editTextPassword = findViewById(R.id.editTextPassword)
         buttonLogin = findViewById(R.id.buttonLogin)
-        buttonRegister = findViewById(R.id.buttonRegister)
         dbHelper = DatabaseHelper(this)
+
+        // Iniciar o WebSocketService
+        Intent(this, WebSocketService::class.java).also { intent ->
+            bindService(intent, connection, Context.BIND_AUTO_CREATE)
+            startService(intent)
+        }
+
+        // Iniciar o SyncService
+        Intent(this, SyncService::class.java).also { intent ->
+            startService(intent)
+        }
 
         // Configurar OnClickListener para o botão Login
         buttonLogin.setOnClickListener {
@@ -69,12 +81,15 @@ class MainActivity : AppCompatActivity() {
                 else {
                     // Verificar as credenciais no banco de dados
                     val isValidCredentials = dbHelper.verificarCredenciais(email, pin)
+                    // Adicionar o log com as credenciais
+                    Log.d("LoginCredentials", "Email: $email, PIN: $pin")
 
                     if (isValidCredentials) {
                         // Passar o nome de email para a próxima atividade
                         val intent = Intent(this, DashboardActivity::class.java)
                         intent.putExtra("emailUsuario", email) // Passando o nome de email como extra
                         startActivity(intent)
+
                     } else {
                         // Se as credenciais forem inválidas, exibir uma mensagem de erro
                         Toast.makeText(this, "E-mail ou PIN inválidos", Toast.LENGTH_SHORT).show()
@@ -86,36 +101,15 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Configurar OnClickListener para o botão Registro
-        buttonRegister.setOnClickListener {
-            val intent = Intent(this, RegistroActivity::class.java)
-            startActivity(intent)
-
-            // Limpar os campos de E-mail e pin
-            editTextEmail.text.clear()
-            editTextPassword.text.clear()
-        }
-        // Iniciar o WebSocketService
-        Intent(this, WebSocketService::class.java).also { intent ->
-            bindService(intent, connection, Context.BIND_AUTO_CREATE)
-            startService(intent)
-        }
-
-        // Iniciar o SyncService
-        Intent(this, SyncService::class.java).also { intent ->
-            startService(intent)
-        }
 
     }
 
     override fun onStart() {
         super.onStart()
 
-
     }
 
     override fun onStop() {
         super.onStop()
-        // Remover chamada para unbindService para garantir que o serviço continue rodando
     }
 }

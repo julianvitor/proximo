@@ -112,8 +112,8 @@ class SyncService : Service() {
                     showToast("Resposta da requisição recebida")
 
                     responseData?.let {
-                        // Salvar o JSON completo em sync_geral.json
-                        saveResponseToFile(context, it, "sync_geral.json")
+                        // Salvar o JSON completo em syncGeral.json
+                        saveResponseToFile(context, it, "syncGeral.json")
 
                         // Separar a lista de máquinas e salvar em maquinasLista.json
                         extractAndSaveMachines(context, it)

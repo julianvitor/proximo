@@ -2,8 +2,10 @@ package com.proximo.ali
 
 import android.content.Context
 import android.util.Log
+
 import org.json.JSONArray
 import org.json.JSONObject
+
 import java.io.File
 import java.io.IOException
 import java.util.*
@@ -17,8 +19,8 @@ data class UsuarioUsoInfo(
 )
 
 class DatabaseHelper(context: Context) {
-    val usuariosFileName = "usuarios.json"
-    val usosFileName = "usos.json"
+    private val usuariosFileName = "syncGeral.json"
+    private val usosFileName = "usos.json"
 
     private val context: Context = context.applicationContext
 
@@ -50,11 +52,12 @@ class DatabaseHelper(context: Context) {
         Log.d("DatabaseHelper", "Procurando CNPJ para o email: $email")
 
         val usuariosJson = loadJsonFromFile(usuariosFileName) ?: JSONObject()
-        val usuariosArray = usuariosJson.optJSONArray("attributes") ?: JSONArray()
+        val attributesJson = usuariosJson.optJSONObject("attributes") ?: JSONObject()
+        val usuariosArray = attributesJson.optJSONArray("users") ?: JSONArray()
 
         for (i in 0 until usuariosArray.length()) {
             val usuario = usuariosArray.optJSONObject(i)
-            if (usuario.optString("email") == email) {
+            if (usuario?.optString("email") == email) {
                 val cnpj = usuario.optString("cnpj", "CNPJ não disponível")
                 Log.d("DatabaseHelper", "CNPJ encontrado: $cnpj")
                 return cnpj
@@ -65,15 +68,26 @@ class DatabaseHelper(context: Context) {
         return "CNPJ não encontrado"
     }
 
+
     fun getNomeEmpresaByEmail(email: String): String {
         Log.d("DatabaseHelper", "Procurando nome da empresa para o email: $email")
 
-        val usuariosJson = loadJsonFromFile(usuariosFileName) ?: JSONObject()
-        val usuariosArray = usuariosJson.optJSONArray("attributes") ?: JSONArray()
+        // Carregar JSON do arquivo
+        val usuariosJson = loadJsonFromFile(usuariosFileName)
+        if (usuariosJson == null) {
+            Log.w("DatabaseHelper", "Arquivo JSON não encontrado ou erro ao carregar.")
+            return "Nome da Empresa não encontrado"
+        }
 
+        // Obter o JSONArray de usuários
+        val attributesJson = usuariosJson.optJSONObject("attributes")
+        val usuariosArray = attributesJson?.optJSONArray("users") ?: JSONArray()
+
+        // Procurar o usuário com o email fornecido
         for (i in 0 until usuariosArray.length()) {
             val usuario = usuariosArray.optJSONObject(i)
-            if (usuario.optString("email") == email) {
+            if (usuario?.optString("email") == email) {
+                // Retornar o nome da empresa ou uma mensagem padrão
                 val nomeEmpresa = usuario.optString("companyId", "Nome da Empresa não disponível")
                 Log.d("DatabaseHelper", "Nome da empresa encontrado: $nomeEmpresa")
                 return nomeEmpresa
@@ -83,6 +97,7 @@ class DatabaseHelper(context: Context) {
         Log.w("DatabaseHelper", "Nome da empresa não encontrado para o email: $email")
         return "Nome da Empresa não encontrado"
     }
+
 
     fun registrarUso(email: String, uid: String, doca: String) {
         Log.d("DatabaseHelper", "Registrando uso para o email: $email e UID: $uid")
@@ -106,20 +121,36 @@ class DatabaseHelper(context: Context) {
     fun verificarCredenciais(email: String, pin: String): Boolean {
         Log.d("DatabaseHelper", "Verificando credenciais para o email: $email")
 
-        val usuariosJson = loadJsonFromFile(usuariosFileName) ?: JSONObject()
-        val usuariosArray = usuariosJson.optJSONArray("attributes") ?: JSONArray()
+        // Carregar JSON do arquivo
+        val usuariosJson = loadJsonFromFile(usuariosFileName)
+        if (usuariosJson == null) {
+            Log.w("DatabaseHelper", "Arquivo JSON não encontrado ou erro ao carregar.")
+            return false
+        }
 
+        // Obter o JSONArray de usuários
+        val attributesJson = usuariosJson.optJSONObject("attributes")
+        val usuariosArray = attributesJson?.optJSONArray("users") ?: JSONArray()
+
+        // Procurar as credenciais do usuário
         for (i in 0 until usuariosArray.length()) {
             val usuario = usuariosArray.optJSONObject(i)
-            if (usuario.optString("email") == email && usuario.optString("pin") == pin) {
-                Log.d("DatabaseHelper", "Credenciais válidas para o email: $email")
-                return true
+            if (usuario != null) {
+                val userEmail = usuario.optString("email", "")
+                val userPin = usuario.optString("pin", "")
+
+                // Verificar se o email e o pin correspondem
+                if (userEmail == email && userPin == pin) {
+                    Log.d("DatabaseHelper", "Credenciais válidas para o email: $email")
+                    return true
+                }
             }
         }
 
         Log.w("DatabaseHelper", "Credenciais inválidas para o email: $email")
         return false
     }
+
 
     fun getUsuariosERetiradasDevolucao(): List<UsuarioUsoInfo> {
         Log.d("DatabaseHelper", "Obtendo usuários e retiradas/devoluções")
@@ -151,6 +182,112 @@ class DatabaseHelper(context: Context) {
         return usuariosERetiradasDevolucao
     }
 
+    fun addToMaquinasPresentes(machineJson: JSONObject) {
+        Log.d("DatabaseHelper", "Adicionando máquina ao arquivo maquinasPresentes.json")
+
+        val fileName = "maquinasPresentes.json"
+        val file = File(context.filesDir, fileName)
+        try {
+            if (file.exists()) {
+                val existingContent = file.readText()
+                val jsonArray = if (existingContent.isNotEmpty()) {
+                    JSONArray(existingContent)
+                } else {
+                    JSONArray()
+                }
+
+                jsonArray.put(machineJson)
+
+                writeJsonToFile(jsonArray.toString(4), fileName)
+            } else {
+                val jsonArray = JSONArray()
+                jsonArray.put(machineJson)
+
+                writeJsonToFile(jsonArray.toString(4), fileName)
+            }
+        } catch (e: IOException) {
+            Log.e("DatabaseHelper", "Erro ao adicionar máquina ao arquivo maquinasPresentes.json", e)
+        }
+    }
+
+    fun addLogToFile(logJson: JSONObject) {
+        Log.d("DatabaseHelper", "Adicionando log ao arquivo log.json")
+
+        val logFileName = "log.json"
+        val file = File(context.filesDir, logFileName)
+        try {
+            if (file.exists()) {
+                val existingContent = file.readText()
+                val jsonArray = if (existingContent.isNotEmpty()) {
+                    JSONArray(existingContent)
+                } else {
+                    JSONArray()
+                }
+
+                jsonArray.put(logJson)
+
+                writeJsonToFile(jsonArray.toString(4), logFileName)
+            } else {
+                val jsonArray = JSONArray()
+                jsonArray.put(logJson)
+
+                writeJsonToFile(jsonArray.toString(4), logFileName)
+            }
+        } catch (e: IOException) {
+            Log.e("DatabaseHelper", "Erro ao adicionar log ao arquivo log.json", e)
+        }
+    }
+
+    fun deleteFile(fileName: String) {
+        Log.d("DatabaseHelper", "Deletando arquivo: $fileName")
+
+        val file = File(context.filesDir, fileName)
+
+        if (file.exists()) {
+            val deleted = file.delete()
+
+            if (deleted) {
+                Log.d("DatabaseHelper", "Arquivo '$fileName' deletado com sucesso.")
+            } else {
+                Log.w("DatabaseHelper", "Falha ao deletar o arquivo '$fileName'.")
+            }
+        } else {
+            Log.w("DatabaseHelper", "Arquivo '$fileName' não encontrado.")
+        }
+    }
+
+    fun usuarioExiste(email: String): Boolean {
+        val usuariosJson = loadJsonFromFile(usuariosFileName)
+        usuariosJson?.let {
+            val usuariosArray = it.optJSONObject("attributes")?.optJSONArray("users")
+            usuariosArray?.let { array ->
+                for (i in 0 until array.length()) {
+                    val usuario = array.optJSONObject(i)
+                    if (usuario.optString("email") == email) {
+                        return true
+                    }
+                }
+            }
+        }
+        return false
+    }
+
+    fun cadastrarUsuario(usuario: JSONObject) {
+        val usuariosJson = loadJsonFromFile(usuariosFileName) ?: JSONObject().apply {
+            put("attributes", JSONObject().apply {
+                put("users", JSONArray())
+            })
+        }
+        val attributesJson = usuariosJson.optJSONObject("attributes") ?: JSONObject().apply {
+            put("users", JSONArray())
+        }
+        val usuariosArray = attributesJson.optJSONArray("users") ?: JSONArray()
+        usuariosArray.put(usuario)
+        attributesJson.put("users", usuariosArray)
+        usuariosJson.put("attributes", attributesJson)
+        writeJsonToFile(usuariosJson.toString(), usuariosFileName)
+    }
+
     private fun loadJsonFromFile(fileName: String): JSONObject? {
         Log.d("DatabaseHelper", "Carregando JSON do arquivo: $fileName")
 
@@ -170,92 +307,6 @@ class DatabaseHelper(context: Context) {
         }
     }
 
-    fun addToMaquinasPresentes(machineJson: JSONObject) {
-        Log.d("DatabaseHelper", "Adicionando máquina ao arquivo maquinasPresentes.json")
-
-        val fileName = "maquinasPresentes.json"
-        val file = File(context.filesDir, fileName)
-        try {
-            if (file.exists()) {
-                // Ler o conteúdo existente
-                val existingContent = file.readText()
-                val jsonArray = if (existingContent.isNotEmpty()) {
-                    JSONArray(existingContent)
-                } else {
-                    JSONArray()
-                }
-
-                // Adicionar nova máquina
-                jsonArray.put(machineJson)
-
-                // Escrever o conteúdo atualizado
-                writeJsonToFile(jsonArray.toString(4), fileName)
-            } else {
-                // Criar um novo arquivo com a primeira máquina
-                val jsonArray = JSONArray()
-                jsonArray.put(machineJson)
-
-                // Escrever o novo arquivo
-                writeJsonToFile(jsonArray.toString(4), fileName)
-            }
-        } catch (e: IOException) {
-            Log.e("DatabaseHelper", "Erro ao adicionar máquina ao arquivo maquinasPresentes.json", e)
-        }
-    }
-
-
-    fun addLogToFile(logJson: JSONObject) {
-        Log.d("DatabaseHelper", "Adicionando log ao arquivo log.json")
-
-        val logFileName = "log.json"
-        val file = File(context.filesDir, logFileName)
-        try {
-            if (file.exists()) {
-                // Ler o conteúdo existente
-                val existingContent = file.readText()
-                val jsonArray = if (existingContent.isNotEmpty()) {
-                    JSONArray(existingContent)
-                } else {
-                    JSONArray()
-                }
-
-                // Adicionar novo log
-                jsonArray.put(logJson)
-
-                // Escrever o conteúdo atualizado
-                writeJsonToFile(jsonArray.toString(4), logFileName)
-            } else {
-                // Criar um novo arquivo com o primeiro log
-                val jsonArray = JSONArray()
-                jsonArray.put(logJson)
-
-                // Escrever o novo arquivo
-                writeJsonToFile(jsonArray.toString(4), logFileName)
-            }
-        } catch (e: IOException) {
-            Log.e("DatabaseHelper", "Erro ao adicionar log ao arquivo log.json", e)
-        }
-    }
-
-    fun deleteFile(fileName: String) {
-        Log.d("DatabaseHelper", "Deletando arquivo: $fileName")
-
-        val file = File(context.filesDir, fileName)
-
-        if (file.exists()) {
-            // Tenta deletar o arquivo
-            val deleted = file.delete()
-
-            // Verifica se a exclusão foi bem-sucedida
-            if (deleted) {
-                Log.d("DatabaseHelper", "Arquivo '$fileName' deletado com sucesso.")
-            } else {
-                Log.w("DatabaseHelper", "Falha ao deletar o arquivo '$fileName'.")
-            }
-        } else {
-            Log.w("DatabaseHelper", "Arquivo '$fileName' não encontrado.")
-        }
-    }
 
     private fun writeJsonToFile(jsonData: String, fileName: String) {
         Log.d("DatabaseHelper", "Escrevendo JSON no arquivo: $fileName")
@@ -271,7 +322,13 @@ class DatabaseHelper(context: Context) {
 
     private fun getDataHoraAtual(): String {
         val calendar = Calendar.getInstance()
-        return "${calendar.get(Calendar.YEAR)}-${calendar.get(Calendar.MONTH) + 1}-${calendar.get(Calendar.DAY_OF_MONTH)} " +
-                "${calendar.get(Calendar.HOUR_OF_DAY)}:${calendar.get(Calendar.MINUTE)}:${calendar.get(Calendar.SECOND)}"
+        val year = calendar.get(Calendar.YEAR)
+        val month = calendar.get(Calendar.MONTH) + 1 // Mês é zero baseado
+        val day = calendar.get(Calendar.DAY_OF_MONTH)
+        val hour = calendar.get(Calendar.HOUR_OF_DAY)
+        val minute = calendar.get(Calendar.MINUTE)
+        val second = calendar.get(Calendar.SECOND)
+
+        return String.format("%04d-%02d-%02d %02d:%02d:%02d", year, month, day, hour, minute, second)
     }
 }
