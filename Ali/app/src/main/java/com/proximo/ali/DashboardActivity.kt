@@ -22,6 +22,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 
+import kotlinx.coroutines.*
 class DashboardActivity : AppCompatActivity() {
 
     private lateinit var dbHelper: DatabaseHelper
@@ -42,11 +43,13 @@ class DashboardActivity : AppCompatActivity() {
             val binder = service as WebSocketService.LocalBinder
             webSocketService = binder.getService()
             isBound = true
+            Log.d("DashboardActivity", "Serviço WebSocket vinculado com sucesso")
             webSocketService?.setCurrentUser(apelido ?: "")
         }
 
         override fun onServiceDisconnected(arg0: ComponentName) {
             isBound = false
+            Log.d("DashboardActivity", "Serviço WebSocket desconectado")
         }
     }
 
@@ -61,33 +64,38 @@ class DashboardActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        connectToWebSocketService() // Certifique-se de que o serviço está vinculado
         setContentView(R.layout.activity_dashboard)
+
 
         apelido = intent.getStringExtra("apelidoUsuario")
         dbHelper = DatabaseHelper(this)
         countdownTextView = findViewById(R.id.countdownTextView)
 
-        requisitarMaquinas() // Requisita as máquinas aos filhos e salva em maquinasPresentes.json
+        requisitarMaquinas()
+        CoroutineScope(Dispatchers.Main).launch {
+            delay(2000)
+            requisitarMaquinas()
+        }
 
         // Adiciona um delay antes de chamar outras funções
-        Handler(Looper.getMainLooper()).postDelayed({
-            createAvailableMachinesJson(this) // Mescla e carrega as máquinas
+        CoroutineScope(Dispatchers.Main).launch {
+            delay(8000)
+            createAvailableMachinesJson(this@DashboardActivity) // Mescla e carrega as máquinas
             setupUI()
-            connectToWebSocketService()
             startGeneralCountdown(countdownGeral)
-
             // Chama a função para exibir as máquinas como cards
             displayMachinesAsCards()
-
-        }, 10000)
+        }
     }
+
+
+
 
     override fun onResume() {
         super.onResume()
-        registerReceiver(
-            broadcastReceiver,
-            IntentFilter("com.example.com.proximo.ali.ACTION_SUCCESS_REMOVIDO")
-        )
+        registerReceiver(broadcastReceiver, IntentFilter("com.example.com.proximo.ali.ACTION_SUCCESS_REMOVIDO"))
+
     }
 
     override fun onPause() {
@@ -115,14 +123,18 @@ class DashboardActivity : AppCompatActivity() {
         }
     }
 
-    // Conectar ao serviço WebSocket
+    interface WebSocketServiceCallback {
+        fun onWebSocketServiceConnected()
+    }
+
+
     private fun connectToWebSocketService() {
         Intent(this, WebSocketService::class.java).also { intent ->
             bindService(intent, connection, Context.BIND_AUTO_CREATE)
             startService(intent)
+            Log.d("DashboardActivity", "Tentando conectar ao serviço WebSocket")
         }
     }
-
     // Iniciar contagem regressiva geral
     private fun startGeneralCountdown(countdownTime: Int) {
         var currentCountdown = countdownTime
@@ -162,12 +174,13 @@ class DashboardActivity : AppCompatActivity() {
         }, 1000)
     }
 
-    // Enviar mensagem via WebSocket
     private fun sendMessage(message: String) {
         if (isBound) {
             webSocketService?.broadcast(message)
+            Log.d("DashboardActivity", "Mensagem enviada: $message")
             showToast("Mensagem enviada: $message")  // Usando template de string para interpolação
         } else {
+            Log.e("DashboardActivity", "Serviço WebSocket não vinculado na DashBoard")
             showToast("Serviço WebSocket não vinculado na DashBoard")
         }
     }
@@ -177,6 +190,7 @@ class DashboardActivity : AppCompatActivity() {
             put("accio_machine", JSONObject()) // Objeto vazio
             put("requestId", 12345678) // ID para confirmação
         }
+        Log.d("DashboardActivity", "Requisitando máquinas...")
         showToast("Requisitando máquinas...")
         sendMessage(accioMachine.toString())
     }
