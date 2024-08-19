@@ -7,20 +7,22 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.ServiceConnection
 import android.os.*
+import android.util.Log
 import android.view.View
-import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.button.MaterialButton
+import org.json.JSONArray
+import org.json.JSONException
 import org.json.JSONObject
-
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 
 class DashboardActivity : AppCompatActivity() {
 
     private lateinit var dbHelper: DatabaseHelper
-    private val handler = Handler(Looper.getMainLooper())
-    private var doca: String? = null
     private var apelido: String? = null
     private var countdownBotao: Int = 30
     private var countdownGeral: Int = 120
@@ -61,14 +63,14 @@ class DashboardActivity : AppCompatActivity() {
         dbHelper = DatabaseHelper(this)
         countdownTextView = findViewById(R.id.countdownTextView)
 
-        requisitarMaquinas()// Requisita as maquinas aos filhos e salva em maquinasPresentes.json DEVO MESCLAR AS MAQUINAS COM O JSON RECEBIDO DA API DE MAQUINAS
+        requisitarMaquinas() // Requisita as máquinas aos filhos e salva em maquinasPresentes.json
         // Adiciona um delay antes de chamar outras funções
         Handler(Looper.getMainLooper()).postDelayed({
-            loadMachines()
+            createAvailableMachinesJson(this) // Mescla e carrega as máquinas
             setupUI()
             connectToWebSocketService()
             startGeneralCountdown(countdownGeral)
-        }, 2000)
+        }, 10000)
     }
 
     override fun onResume() {
@@ -93,7 +95,6 @@ class DashboardActivity : AppCompatActivity() {
         countdownHandler.removeCallbacksAndMessages(null)
         countdownGeralHandler.removeCallbacksAndMessages(null)
     }
-
 
     // Configuração da interface do usuário
     private fun setupUI() {
@@ -156,7 +157,7 @@ class DashboardActivity : AppCompatActivity() {
             webSocketService?.broadcast(message)
             showMessageSent(message)
         } else {
-            showToast("Erro: Serviço WebsocketService não vinculado")
+            showToast("Erro: Serviço WebSocket não vinculado")
         }
     }
 
@@ -166,12 +167,95 @@ class DashboardActivity : AppCompatActivity() {
             put("requestId", 12345678) // ID para confirmação
         }
         showToast("Requisitando máquinas...")
-        sendMessage(accioMachine.toString()) // Corrigir o envio da mensagem para o formato String
+        sendMessage(accioMachine.toString())
+    }
+
+    fun createAvailableMachinesJson(context: Context) {
+        try {
+            // Ler arquivos JSON
+            val catalogFile = File(context.filesDir, "maquinasCatalog.json")
+            val presentesFile = File(context.filesDir, "maquinasPresentes.json")
+
+            val catalogData = catalogFile.readText()
+            val presentesData = presentesFile.readText()
+
+            // Converter strings JSON em objetos JSONArray
+            val catalogArray = JSONArray(catalogData)
+            val presentesArray = JSONArray(presentesData)
+
+            Log.d("DashboardActivity", "Catálogo JSON: $catalogData")
+            Log.d("DashboardActivity", "Presentes JSON: $presentesData")
+
+            // Criar um mapa para armazenar RFID para modelo
+            val rfidToModelMap = mutableMapOf<String, String>()
+
+            // Adicionar máquinas do catálogo ao mapa, verificando RFIDs duplicados
+            for (i in 0 until catalogArray.length()) {
+                val item = catalogArray.getJSONObject(i)
+                val rfid = item.optString("rfid", null)
+                val name = item.optString("name", null)
+
+                if (rfid != null && name != null) {
+                    if (rfidToModelMap.containsKey(rfid)) {
+                        // Log e Toast informando sobre o RFID duplicado
+                        val errorMessage = "Erro: RFID duplicado encontrado no catálogo: $rfid"
+                        Log.e("DashboardActivity", errorMessage)
+                        showToast("Erro nos dados da API: RFID duplicado encontrado")
+                    } else {
+                        // Adiciona ao mapa apenas se o RFID não for duplicado
+                        rfidToModelMap[rfid] = name
+                    }
+                }
+            }
+
+            // Criar um JSONArray para armazenar máquinas disponíveis
+            val availableMachinesArray = JSONArray()
+
+            // Adicionar máquinas presentes ao JSONArray disponível
+            for (i in 0 until presentesArray.length()) {
+                val item = presentesArray.getJSONObject(i)
+                val accioMachineResponse = item.optJSONObject("accio_machine_response")
+                val rfid = accioMachineResponse?.optString("rfid", null)
+                if (rfid != null) {
+                    val model = rfidToModelMap[rfid] // Obter o modelo usando o RFID
+                    if (model != null) {
+                        val availableItem = JSONObject().apply {
+                            put("rfid", rfid)
+                            put("modelo", model)
+                        }
+                        availableMachinesArray.put(availableItem)
+                    }
+                }
+            }
+
+            Log.d("DashboardActivity", "Máquinas combinadas: $availableMachinesArray")
+            // Salvar o JSON disponível em um arquivo
+            saveResponseToFile(context, availableMachinesArray.toString(), "MaquinasDisponiveis.json")
+
+            // Exibir um Toast indicando sucesso
+            showToast( "Máquinas disponíveis salvas com sucesso.")
+
+        } catch (e: JSONException) {
+            showToast("Erro ao processar JSON: ${e.message}")
+        } catch (e: IOException) {
+            showToast("Erro ao ler arquivos: ${e.message}")
+        }
     }
 
 
-    private fun loadMachines() {
-
+    private fun saveResponseToFile(context: Context, data: String, fileName: String) {
+        try {
+            val file = File(context.filesDir, fileName)
+            FileOutputStream(file).use { fos ->
+                fos.write(data.toByteArray())
+                fos.flush()
+            }
+            Log.d("DashboardActivity", "Resposta salva em $fileName")
+            showToast("Resposta salva em $fileName")
+        } catch (e: IOException) {
+            Log.e("DashboardActivity", "Erro ao salvar o arquivo", e)
+            showToast("Erro ao salvar o arquivo: ${e.message}")
+        }
     }
 
     // Exibir mensagem enviada
@@ -181,7 +265,6 @@ class DashboardActivity : AppCompatActivity() {
         }
     }
 
-    // Exibir Toast
     private fun showToast(message: String) {
         Handler(Looper.getMainLooper()).post {
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show()

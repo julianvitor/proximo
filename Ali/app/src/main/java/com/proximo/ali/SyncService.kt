@@ -147,7 +147,7 @@ class SyncService : Service() {
             val machines = attributes.getJSONArray("machines")
 
             // Converter a lista de máquinas em uma string JSON e salvar
-            saveResponseToFile(context, machines.toString(), "maquinasLista.json")
+            saveResponseToFile(context, machines.toString(), "maquinasCatalog.json")
         } catch (e: JSONException) {
             showToast("Erro ao processar o JSON: ${e.message}")
         }

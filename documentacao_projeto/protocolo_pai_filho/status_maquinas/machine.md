@@ -14,17 +14,25 @@ A resposta do filho deve ser no seguinte formato:
 
 ```json
 {
-    "accio_machine_response":{
-        "CA:FE:CA:FE:CA:FE":{ // Endereço MAC do filho
-            "machineId": "UID_RFID_1234567890",  // tag rfid da maquina
-            "childId": "CA:FE:CA:FE:CA:FE"  // Endereço MAC do filho
-        }
+    "accio_machine_response": {
+        "rfid": "12345678910",
+        "childId": "CA:FE:CA:FE:CA:FE"
     },
-    "requestId": "12345678"  // ID para confirmação
+    "requestId": "12345678"
 }
-
 ```
 
+Mais exemplos:
+
+```json
+{
+    "accio_machine_response": {
+        "rfid": "9876543210",
+        "childId": "CA:CA:CA:CA:CA:CA"
+    },
+    "requestId": "87654321"
+}
+```
 
 ### Request
 
@@ -33,7 +41,7 @@ A resposta do filho deve ser no seguinte formato:
 
 #### Response 
 - **accio_machine_response** (objeto): Objeto principal da resposta.
-- **machineId** (string): UID de RFID do dispositivo.
+- **rfid** (string): UID de RFID do dispositivo.
 - **childId** (string): Identificador único associado ao filho.
 - **requestId** (string): Identificador único para a confirmação da solicitação.
 
@@ -49,4 +57,4 @@ A resposta do filho deve ser no seguinte formato:
 **R:** Campos adicionais serão ignorados pelo aplicativo, mas evite para melhor performance e entendimento do codigo.
 
 **P:** Posso omitir campos opcionais?
-**R:** Sim, campos opcionais podem ser omitidos, mas os campos requestId, childId e machineId devem estar presentes.
+**R:** Sim, campos opcionais podem ser omitidos, mas os campos requestId, childId e rfid devem estar presentes.
