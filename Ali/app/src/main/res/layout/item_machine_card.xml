@@ -18,7 +18,7 @@
             android:layout_width="150dp"
             android:layout_height="150dp"
             android:scaleType="centerCrop"
-            android:src="@drawable/maquina_generica_miniatura" />
+            android:src="@drawable/default_machine_image" />
 
         <TextView
             android:id="@+id/textViewMachineName"

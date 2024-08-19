@@ -80,7 +80,6 @@ class WebSocketService() : Service(), Parcelable {
     }
 
     // Manipulação de mensagens WebSocket
-    // Manipulação de mensagens WebSocket
     private fun handleWebSocketMessage(message: String, conn: WebSocket) {
         when {
             // Inserção

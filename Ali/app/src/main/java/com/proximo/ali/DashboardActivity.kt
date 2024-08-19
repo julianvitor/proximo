@@ -9,6 +9,8 @@ import android.content.ServiceConnection
 import android.os.*
 import android.util.Log
 import android.view.View
+import android.widget.GridLayout
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -31,6 +33,8 @@ class DashboardActivity : AppCompatActivity() {
     private var countdownGeralHandler: Handler = Handler(Looper.getMainLooper())
     private var webSocketService: WebSocketService? = null
     private var isBound = false
+    private var maquinasDisponiveis = "maquinasDisponiveis.json"
+    private var maquinasPresentes = "maquinasPresentes.json"
 
     // Conexão ao serviço WebSocket
     private val connection = object : ServiceConnection {
@@ -64,12 +68,17 @@ class DashboardActivity : AppCompatActivity() {
         countdownTextView = findViewById(R.id.countdownTextView)
 
         requisitarMaquinas() // Requisita as máquinas aos filhos e salva em maquinasPresentes.json
+
         // Adiciona um delay antes de chamar outras funções
         Handler(Looper.getMainLooper()).postDelayed({
             createAvailableMachinesJson(this) // Mescla e carrega as máquinas
             setupUI()
             connectToWebSocketService()
             startGeneralCountdown(countdownGeral)
+
+            // Chama a função para exibir as máquinas como cards
+            displayMachinesAsCards()
+
         }, 10000)
     }
 
@@ -94,6 +103,8 @@ class DashboardActivity : AppCompatActivity() {
         }
         countdownHandler.removeCallbacksAndMessages(null)
         countdownGeralHandler.removeCallbacksAndMessages(null)
+        dbHelper.deleteFile(maquinasDisponiveis)
+        dbHelper.deleteFile(maquinasPresentes)
     }
 
     // Configuração da interface do usuário
@@ -155,9 +166,9 @@ class DashboardActivity : AppCompatActivity() {
     private fun sendMessage(message: String) {
         if (isBound) {
             webSocketService?.broadcast(message)
-            showMessageSent(message)
+            showToast("Mensagem enviada: $message")  // Usando template de string para interpolação
         } else {
-            showToast("Erro: Serviço WebSocket não vinculado")
+            showToast("Serviço WebSocket não vinculado na DashBoard")
         }
     }
 
@@ -211,12 +222,16 @@ class DashboardActivity : AppCompatActivity() {
             // Criar um JSONArray para armazenar máquinas disponíveis
             val availableMachinesArray = JSONArray()
 
+            // Usar um Set para rastrear RFIDs já adicionados
+            val addedRfids = mutableSetOf<String>()
+
             // Adicionar máquinas presentes ao JSONArray disponível
             for (i in 0 until presentesArray.length()) {
                 val item = presentesArray.getJSONObject(i)
                 val accioMachineResponse = item.optJSONObject("accio_machine_response")
                 val rfid = accioMachineResponse?.optString("rfid", null)
-                if (rfid != null) {
+
+                if (rfid != null && !addedRfids.contains(rfid)) {
                     val model = rfidToModelMap[rfid] // Obter o modelo usando o RFID
                     if (model != null) {
                         val availableItem = JSONObject().apply {
@@ -224,16 +239,17 @@ class DashboardActivity : AppCompatActivity() {
                             put("modelo", model)
                         }
                         availableMachinesArray.put(availableItem)
+                        addedRfids.add(rfid) // Marcar o RFID como adicionado
                     }
                 }
             }
 
             Log.d("DashboardActivity", "Máquinas combinadas: $availableMachinesArray")
             // Salvar o JSON disponível em um arquivo
-            saveResponseToFile(context, availableMachinesArray.toString(), "MaquinasDisponiveis.json")
+            saveResponseToFile(context, availableMachinesArray.toString(), maquinasDisponiveis)
 
             // Exibir um Toast indicando sucesso
-            showToast( "Máquinas disponíveis salvas com sucesso.")
+            showToast("Máquinas disponíveis salvas com sucesso.")
 
         } catch (e: JSONException) {
             showToast("Erro ao processar JSON: ${e.message}")
@@ -241,6 +257,7 @@ class DashboardActivity : AppCompatActivity() {
             showToast("Erro ao ler arquivos: ${e.message}")
         }
     }
+
 
 
     private fun saveResponseToFile(context: Context, data: String, fileName: String) {
@@ -257,6 +274,64 @@ class DashboardActivity : AppCompatActivity() {
             showToast("Erro ao salvar o arquivo: ${e.message}")
         }
     }
+
+
+    private fun displayMachinesAsCards() {
+        val gridLayout: GridLayout = findViewById(R.id.gridLayoutMachines)
+
+        try {
+            // Ler o arquivo JSON maquinasDisponiveis.json
+            val file = File(filesDir, maquinasDisponiveis)
+            val availableMachinesData = file.readText()
+            val availableMachinesArray = JSONArray(availableMachinesData)
+
+            // Iterar sobre os dados das máquinas disponíveis
+            for (i in 0 until availableMachinesArray.length()) {
+                val machine = availableMachinesArray.getJSONObject(i)
+                val modelName = machine.getString("modelo")
+                val rfid = machine.getString("rfid") // Obtenha o RFID da máquina
+
+                // Criar um novo card dinamicamente
+                val cardView = layoutInflater.inflate(R.layout.item_machine_card, gridLayout, false) as androidx.cardview.widget.CardView
+
+                // Configurar o nome da máquina no TextView
+                val textViewMachineName: TextView = cardView.findViewById(R.id.textViewMachineName)
+                textViewMachineName.text = modelName
+
+                // Configurar a imagem da máquina no ImageView
+                val imageViewMachine: ImageView = cardView.findViewById(R.id.imageViewMachine)
+                val drawableName = modelName.replace(" ", "").lowercase()
+                val drawableResId = ImageMap.getDrawableResId(drawableName)
+                imageViewMachine.setImageResource(drawableResId)
+
+                // Adicionar o listener de clique no card
+                cardView.setOnClickListener {
+                    // Iniciar contagem regressiva do botão
+                    startButtonCountdown(countdownBotao)
+
+                    // Criar a mensagem JSON
+                    val jsonMessage = JSONObject().apply {
+                        put("command", "ativar")
+                        put("rfid", rfid) // Usar o RFID da máquina
+                        put("requestId", 12345678) // ID fixo ou gerado dinamicamente
+                    }
+
+                    // Enviar a mensagem pelo WebSocket
+                    sendMessage(jsonMessage.toString())
+                }
+
+                // Adicionar o card ao GridLayout
+                gridLayout.addView(cardView)
+            }
+
+        } catch (e: JSONException) {
+            showToast("Erro ao processar JSON: ${e.message}")
+        } catch (e: IOException) {
+            showToast("Erro ao ler o arquivo: ${e.message}")
+        }
+    }
+
+
 
     // Exibir mensagem enviada
     private fun showMessageSent(message: String) {

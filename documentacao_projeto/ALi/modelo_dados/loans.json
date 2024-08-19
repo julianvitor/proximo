@@ -1,0 +1,12 @@
+{
+    "loans": [
+            {
+                "id": "d55846cc-7bda-459d-b884-add19ea052ac",
+                "machineId": "cea80db2-0777-427b-80c8-b8487e888b0e",
+                "userId": "75fa50cc-c259-4f6b-9a33-15d6ba30abb5",
+                "start_time": "2024-08-14T04:01:57.696Z",
+                "end_time": "2024-08-14T10:01:57.696Z",
+                "endStationId": "d8cab64f-5775-44f3-98cb-2d619234bf5a"
+            }
+        ]
+} 
