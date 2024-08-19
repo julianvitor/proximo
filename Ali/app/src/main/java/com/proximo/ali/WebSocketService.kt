@@ -1,5 +1,6 @@
 package com.proximo.ali
 
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -11,6 +12,7 @@ import androidx.core.app.NotificationCompat
 import org.java_websocket.server.WebSocketServer
 import org.java_websocket.WebSocket
 import org.java_websocket.handshake.ClientHandshake
+import org.json.JSONException
 import org.json.JSONObject
 import java.net.InetSocketAddress
 
@@ -43,6 +45,7 @@ class WebSocketService() : Service(), Parcelable {
         return binder
     }
 
+    @SuppressLint("ForegroundServiceType")
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val notification = createNotification()
         startForeground(1, notification)
@@ -77,71 +80,72 @@ class WebSocketService() : Service(), Parcelable {
     }
 
     // Manipulação de mensagens WebSocket
+    // Manipulação de mensagens WebSocket
     private fun handleWebSocketMessage(message: String, conn: WebSocket) {
         when {
-            // inserção
+            // Inserção
             message.startsWith("inserido:") -> {
-                val uid = message.substringAfter(":")
+                val uid = message.substringAfter(":").trim()
                 dbHelper?.registrarDevolucao(uid)
                 showToast("Sucesso: devolvido")
                 conn.send("Sucesso: devolvido")
             }
 
-            // remoção
+            // Remoção
             message.startsWith("removido:") -> {
-                val uid = message.substringAfter(":")
-                if (currentUser == null) {
-                    showToast("Retirada inválida: Usuário não autenticado")
-                    conn.send("Retirada inválida: Usuário não autenticado")
-                } else if (currentUser == "indefinido") {
-                    showToast("Retirada inválida: Usuário indefinido")
-                    conn.send("Retirada inválida: Usuário indefinido")
-                } else {
-                    dbHelper?.registrarUso(currentUser!!, uid, "doca")
-                    showToast("Sucesso: removido")
-                    conn.send("Sucesso: removido")
-                    currentUser = null
-                    sendBroadcast(Intent("com.example.com.proximo.ali.ACTION_SUCCESS_REMOVIDO"))
-                }
-            }
-
-            // log
-            message.startsWith("{") -> {
-                try {
-                    val jsonObject = JSONObject(message)
-
-                    if (jsonObject.has("log")) {
-                        dbHelper?.addLogToFile(jsonObject)
-                        showToast("Log salvo com sucesso")
-                    } else {
-                        showToast("Outro JSON recebido: $jsonObject")
-                        conn.send("Outro JSON processado com sucesso")
+                val uid = message.substringAfter(":").trim()
+                when {
+                    currentUser == null -> {
+                        showToast("Retirada inválida: Usuário não autenticado")
+                        conn.send("Retirada inválida: Usuário não autenticado")
                     }
-                } catch (e: Exception) {
-                    showToast("Erro ao processar o JSON")
-                    conn.send("Erro ao processar o JSON")
+                    currentUser == "indefinido" -> {
+                        showToast("Retirada inválida: Usuário indefinido")
+                        conn.send("Retirada inválida: Usuário indefinido")
+                    }
+                    else -> {
+                        dbHelper?.registrarUso(currentUser!!, uid, "doca")
+                        showToast("Sucesso: removido")
+                        conn.send("Sucesso: removido")
+                        currentUser = null
+                        sendBroadcast(Intent("com.example.com.proximo.ali.ACTION_SUCCESS_REMOVIDO"))
+                    }
                 }
             }
 
             // Resposta de máquina (JSON accio_machine_response)
-            message.startsWith("{") && message.contains("\"accio_machine_response\":") -> {
+            message.startsWith("{") -> {
                 try {
                     val jsonObject = JSONObject(message)
-                    dbHelper?.addToMaquinasPresentes(jsonObject)
-                    showToast("Informações de máquina salvas com sucesso")
+
+                    if (jsonObject.has("accio_machine_response")) {
+                        // Se contém "accio_machine_response", processar como resposta de máquina
+                        dbHelper?.addToMaquinasPresentes(jsonObject)
+                        showToast("Informações de máquina salvas com sucesso")
+                    } else if (jsonObject.has("log")) {
+                        // Se contém "log", processar como log
+                        dbHelper?.addLogToFile(jsonObject)
+                        showToast("Log salvo com sucesso")
+                    } else {
+                        // Outro JSON
+                        showToast("Outro JSON recebido: $jsonObject")
+                        conn.send("Outro JSON processado com sucesso")
+                    }
+                } catch (e: JSONException) {
+                    showToast("Erro ao processar o JSON: ${e.message}")
+                    conn.send("Erro ao processar o JSON")
                 } catch (e: Exception) {
-                    showToast("Erro ao processar o JSON")
-                    //conn.send("Erro ao processar o JSON")
+                    showToast("Erro inesperado: ${e.message}")
+                    conn.send("Erro inesperado ao processar o JSON")
                 }
             }
 
-
             else -> {
                 showToast("Mensagem recebida: $message")
-                //conn.send("Mensagem recebida: $message")
             }
         }
     }
+
 
     // Método para enviar uma mensagem para todos os clientes conectados
     fun broadcast(mensagem: String) {

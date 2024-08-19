@@ -17,7 +17,7 @@ A resposta do filho deve ser no seguinte formato:
     "accio_machine_response":{
         "CA:FE:CA:FE:CA:FE":{ // Endereço MAC do filho
             "machineId": "UID_RFID_1234567890",  // tag rfid da maquina
-            "childId": "CA:FE:CA:FE:CA:FE",  // Endereço MAC do filho
+            "childId": "CA:FE:CA:FE:CA:FE"  // Endereço MAC do filho
         }
     },
     "requestId": "12345678"  // ID para confirmação
