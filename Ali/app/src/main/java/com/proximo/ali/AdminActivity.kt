@@ -54,8 +54,6 @@ class AdminActivity : AppCompatActivity() {
 
             val diferencaTempo = calcularDiferencaTempo(usuario.retirada, usuario.devolucao)
             holder.tempoTextView.text = formatarTempo(diferencaTempo)
-            holder.cnpjTextView.text = "CNPJ: ${usuario.cnpj}"
-            holder.nomeEmpresaTextView.text = "Nome da Empresa: ${usuario.nomeEmpresa}"
         }
 
         override fun getItemCount(): Int {
@@ -67,8 +65,6 @@ class AdminActivity : AppCompatActivity() {
             val retiradaTextView: TextView = itemView.findViewById(R.id.retirada_text_view)
             val devolucaoTextView: TextView = itemView.findViewById(R.id.devolucao_text_view)
             val tempoTextView: TextView = itemView.findViewById(R.id.tempo_text_view)
-            val cnpjTextView: TextView = itemView.findViewById(R.id.cnpj_text_view)
-            val nomeEmpresaTextView: TextView = itemView.findViewById(R.id.nome_empresa_text_view)
         }
     }
 

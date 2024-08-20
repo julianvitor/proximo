@@ -1,7 +1,10 @@
 package com.proximo.ali
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
+import android.widget.Toast
 
 import org.json.JSONArray
 import org.json.JSONObject
@@ -14,115 +17,64 @@ data class UsuarioUsoInfo(
     val email: String,
     val retirada: String,
     val devolucao: String,
-    val cnpj: String,
-    val nomeEmpresa: String
+
 )
 
 class DatabaseHelper(context: Context) {
-    private val usuariosFileName = "syncGeral.json"
-    private val usosFileName = "usos.json"
-
+    private val expressSyncFileName = "syncGeral.json"
+    private val usersFileName = "syncGeral.json"
+    private val removalsFileName = "removals.json"
+    private val returnsFileName = "returns.json"
+    private val handler = Handler(Looper.getMainLooper())
     private val context: Context = context.applicationContext
 
-    fun registrarDevolucao(uid: String) {
-        Log.d("DatabaseHelper", "Registrando devolução para UID: $uid")
+    fun registrarDevolucao(rfid: String) {
+        Log.d("DatabaseHelper", "Registrando devolução para UID: $rfid")
 
-        val usosJson = loadJsonFromFile(usosFileName) ?: JSONObject()
+        val usosJson = loadJsonFromFile(removalsFileName) ?: JSONObject()
         val usosArray = usosJson.optJSONArray("usos") ?: JSONArray()
 
         var devolucaoRegistrada = false
 
         for (i in 0 until usosArray.length()) {
             val uso = usosArray.optJSONObject(i)
-            if (uso.optString("uid") == uid && !uso.has("devolucao")) {
+            if (uso.optString("rfid") == rfid && !uso.has("devolucao")) {
                 uso.put("devolucao", getDataHoraAtual())
                 devolucaoRegistrada = true
-                Log.d("DatabaseHelper", "Devolução registrada para UID: $uid")
+                Log.d("DatabaseHelper", "Devolução registrada para UID: $rfid")
             }
         }
 
-        writeJsonToFile(usosJson.toString(), usosFileName)
-
+        writeJsonToFile(usosJson.toString(), removalsFileName)
         if (!devolucaoRegistrada) {
-            Log.w("DatabaseHelper", "Nenhuma devolução registrada para UID: $uid")
+            Log.w("DatabaseHelper", "Nenhuma devolução registrada para UID: $rfid")
         }
     }
 
-    fun getCnpjByEmail(email: String): String {
-        Log.d("DatabaseHelper", "Procurando CNPJ para o email: $email")
+    fun registrarUso(email: String, rfid: String, doca: String) {
+        Log.d("DatabaseHelper", "Registrando uso para o email: $email e UID: $rfid")
 
-        val usuariosJson = loadJsonFromFile(usuariosFileName) ?: JSONObject()
-        val attributesJson = usuariosJson.optJSONObject("attributes") ?: JSONObject()
-        val usuariosArray = attributesJson.optJSONArray("users") ?: JSONArray()
-
-        for (i in 0 until usuariosArray.length()) {
-            val usuario = usuariosArray.optJSONObject(i)
-            if (usuario?.optString("email") == email) {
-                val cnpj = usuario.optString("cnpj", "CNPJ não disponível")
-                Log.d("DatabaseHelper", "CNPJ encontrado: $cnpj")
-                return cnpj
-            }
-        }
-
-        Log.w("DatabaseHelper", "CNPJ não encontrado para o email: $email")
-        return "CNPJ não encontrado"
-    }
-
-
-    fun getNomeEmpresaByEmail(email: String): String {
-        Log.d("DatabaseHelper", "Procurando nome da empresa para o email: $email")
-
-        // Carregar JSON do arquivo
-        val usuariosJson = loadJsonFromFile(usuariosFileName)
-        if (usuariosJson == null) {
-            Log.w("DatabaseHelper", "Arquivo JSON não encontrado ou erro ao carregar.")
-            return "Nome da Empresa não encontrado"
-        }
-
-        // Obter o JSONArray de usuários
-        val attributesJson = usuariosJson.optJSONObject("attributes")
-        val usuariosArray = attributesJson?.optJSONArray("users") ?: JSONArray()
-
-        // Procurar o usuário com o email fornecido
-        for (i in 0 until usuariosArray.length()) {
-            val usuario = usuariosArray.optJSONObject(i)
-            if (usuario?.optString("email") == email) {
-                // Retornar o nome da empresa ou uma mensagem padrão
-                val nomeEmpresa = usuario.optString("companyId", "Nome da Empresa não disponível")
-                Log.d("DatabaseHelper", "Nome da empresa encontrado: $nomeEmpresa")
-                return nomeEmpresa
-            }
-        }
-
-        Log.w("DatabaseHelper", "Nome da empresa não encontrado para o email: $email")
-        return "Nome da Empresa não encontrado"
-    }
-
-
-    fun registrarUso(email: String, uid: String, doca: String) {
-        Log.d("DatabaseHelper", "Registrando uso para o email: $email e UID: $uid")
-
-        val usosJson = loadJsonFromFile(usosFileName) ?: JSONObject()
+        val usosJson = loadJsonFromFile(removalsFileName) ?: JSONObject()
         val usosArray = usosJson.optJSONArray("usos") ?: JSONArray()
 
         val novoUso = JSONObject()
         novoUso.put("email", email)
         novoUso.put("retirada", getDataHoraAtual())
-        novoUso.put("uid", uid)
+        novoUso.put("rfid", rfid)
         novoUso.put("doca", doca)
         usosArray.put(novoUso)
 
         usosJson.put("usos", usosArray)
-        writeJsonToFile(usosJson.toString(), usosFileName)
+        writeJsonToFile(usosJson.toString(), removalsFileName)
 
-        Log.d("DatabaseHelper", "Uso registrado para o email: $email e UID: $uid")
+        Log.d("DatabaseHelper", "Uso registrado para o email: $email e UID: $rfid")
     }
 
     fun verificarCredenciais(email: String, pin: String): Boolean {
         Log.d("DatabaseHelper", "Verificando credenciais para o email: $email")
 
         // Carregar JSON do arquivo
-        val usuariosJson = loadJsonFromFile(usuariosFileName)
+        val usuariosJson = loadJsonFromFile(usersFileName)
         if (usuariosJson == null) {
             Log.w("DatabaseHelper", "Arquivo JSON não encontrado ou erro ao carregar.")
             return false
@@ -151,11 +103,10 @@ class DatabaseHelper(context: Context) {
         return false
     }
 
-
     fun getUsuariosERetiradasDevolucao(): List<UsuarioUsoInfo> {
         Log.d("DatabaseHelper", "Obtendo usuários e retiradas/devoluções")
 
-        val usosJson = loadJsonFromFile(usosFileName) ?: JSONObject()
+        val usosJson = loadJsonFromFile(removalsFileName) ?: JSONObject()
         val usosArray = usosJson.optJSONArray("usos") ?: JSONArray()
 
         val usuariosERetiradasDevolucao = mutableListOf<UsuarioUsoInfo>()
@@ -165,15 +116,12 @@ class DatabaseHelper(context: Context) {
             val email = uso.optString("email")
             val retirada = uso.optString("retirada")
             val devolucao = uso.optString("devolucao", "")
-            val uid = uso.optString("uid")
+            val rfid = uso.optString("rfid")
 
             Log.d("DatabaseHelper", "Obtendo informações para o email: $email")
 
-            val cnpj = getCnpjByEmail(email)
-            val nomeEmpresa = getNomeEmpresaByEmail(email)
-
             usuariosERetiradasDevolucao.add(
-                UsuarioUsoInfo(email, retirada, devolucao, cnpj, nomeEmpresa)
+                UsuarioUsoInfo(email, retirada, devolucao)
             )
         }
 
@@ -183,27 +131,24 @@ class DatabaseHelper(context: Context) {
     }
 
     fun addToMaquinasPresentes(machineJson: JSONObject) {
-        Log.d("DatabaseHelper", "Adicionando máquina ao arquivo maquinasPresentes.json")
+        Log.d("DatabaseHelper", "Adicionando maquina ao arquivo maquinasPresentes.json")
 
         val fileName = "maquinasPresentes.json"
         val file = File(context.filesDir, fileName)
         try {
             if (file.exists()) {
                 val existingContent = file.readText()
-                val jsonArray = if (existingContent.isNotEmpty()) {
-                    JSONArray(existingContent)
-                } else {
-                    JSONArray()
-                }
-
+                val jsonArray = if (existingContent.isNotEmpty()) { JSONArray(existingContent) } else { JSONArray() }
                 jsonArray.put(machineJson)
-
                 writeJsonToFile(jsonArray.toString(4), fileName)
-            } else {
+                Log.i("DatabaseHelper", "Salvo em maquinasPresentes.json")
+            }
+            else {
+                Log.i("DatabaseHelper","maquinasPresentes.json não existe")
                 val jsonArray = JSONArray()
                 jsonArray.put(machineJson)
-
                 writeJsonToFile(jsonArray.toString(4), fileName)
+                Log.i("DatabaseHelper","Criado e salvo em maquinasPresentes.json")
             }
         } catch (e: IOException) {
             Log.e("DatabaseHelper", "Erro ao adicionar máquina ao arquivo maquinasPresentes.json", e)
@@ -218,11 +163,7 @@ class DatabaseHelper(context: Context) {
         try {
             if (file.exists()) {
                 val existingContent = file.readText()
-                val jsonArray = if (existingContent.isNotEmpty()) {
-                    JSONArray(existingContent)
-                } else {
-                    JSONArray()
-                }
+                val jsonArray = if (existingContent.isNotEmpty()) { JSONArray(existingContent) } else { JSONArray() }
 
                 jsonArray.put(logJson)
 
@@ -257,7 +198,7 @@ class DatabaseHelper(context: Context) {
     }
 
     fun usuarioExiste(email: String): Boolean {
-        val usuariosJson = loadJsonFromFile(usuariosFileName)
+        val usuariosJson = loadJsonFromFile(usersFileName)
         usuariosJson?.let {
             val usuariosArray = it.optJSONObject("attributes")?.optJSONArray("users")
             usuariosArray?.let { array ->
@@ -273,7 +214,7 @@ class DatabaseHelper(context: Context) {
     }
 
     fun cadastrarUsuario(usuario: JSONObject) {
-        val usuariosJson = loadJsonFromFile(usuariosFileName) ?: JSONObject().apply {
+        val usuariosJson = loadJsonFromFile(usersFileName) ?: JSONObject().apply {
             put("attributes", JSONObject().apply {
                 put("users", JSONArray())
             })
@@ -285,7 +226,7 @@ class DatabaseHelper(context: Context) {
         usuariosArray.put(usuario)
         attributesJson.put("users", usuariosArray)
         usuariosJson.put("attributes", attributesJson)
-        writeJsonToFile(usuariosJson.toString(), usuariosFileName)
+        writeJsonToFile(usuariosJson.toString(), usersFileName)
     }
 
     private fun loadJsonFromFile(fileName: String): JSONObject? {
@@ -306,7 +247,6 @@ class DatabaseHelper(context: Context) {
             null
         }
     }
-
 
     private fun writeJsonToFile(jsonData: String, fileName: String) {
         Log.d("DatabaseHelper", "Escrevendo JSON no arquivo: $fileName")

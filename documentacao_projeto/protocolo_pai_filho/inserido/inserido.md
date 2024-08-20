@@ -6,10 +6,13 @@ A resposta do filho deve ser no seguinte formato:
 
 ```json
 {
-    "report": {
-        "inserido": "04:1A:2B:3C:4D:5E:6F",  // tag rfid da maquina
-    },
-    "requestId": "12345678"// ID para confirmação
+  "report": {
+    "inserted": {
+      "rfid": "041A2B3C4D5E6F",
+      "station_mac": "AA:BB:CC:DD:EE:FF"
+    }
+  },
+  "requestId": "12345678"
 }
 
 ```
@@ -17,14 +20,16 @@ A resposta do filho deve ser no seguinte formato:
 
 ### Descrição dos Campos
 
-- **report** (objeto): O objeto principal do evento.
-- **inserido** (string): Identificador único, indica que um novo cartão RFID foi detectado e inserido.
+- **report** (objeto): O objeto principal que contém as informações do evento.
+- **inserted** (objeto): Contém dados específicos da operação realizada
+- **rfid**(string): Identificador RFID da máquina.
+- **station_mac**(string):  Endereço MAC da estação(filho).
 - **requestId** (string): Identificador único para a confirmação da solicitação.
 
 
 ## Erros Comuns e Tratamento
 
-- **Campo faltando**: Se `inserido:` estiver ausente, a mensagem não será processada corretamente e será considerada inválida.
+- **Campo faltando**: se qualquer campo com exceção de requestID que é usado para confirmação estiver faltando a operação será ignorada.
 - **Formato incorreto**: Se o UID não estiver no formato recomendado ou se o prefixo estiver incorreto, o aplicativo pode falhar ao tentar processar a mensagem.
 - **Tratamento**: Em caso de erro, o aplicativo ignorará a mensagem malformada e, se necessário, exibirá uma mensagem de erro no Logcat
 

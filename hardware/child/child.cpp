@@ -63,6 +63,7 @@ void desativar_rele1_callback();
 void desativar_rele2_callback();
 void reiniciar_pn532_callback();
 void iniciarPn532_callback(int I2C_SDA, int I2C_SCL);// Iniciar o rsto, instancia o PN532 e inicia a comunicacao em modo leitura
+void LogResponse();
 
 // Instanciar sensor
 PN532_I2C pn532_i2c(Wire);
@@ -70,7 +71,7 @@ PN532 nfc(pn532_i2c);
 
 // Instanciar os timers(tasks)
 TickTwo timerLerRfid(ler_rfid_callback, 6000, 0, MILLIS);
-TickTwo timerReiniciarPn532(reiniciar_pn532_callback, 300000, 0, MILLIS);// Reinicia o PN532 a cada 300 segundos / 5 minutos
+TickTwo timerReiniciarPn532(reiniciar_pn532_callback, 120000, 0, MILLIS);// Reinicia o PN532 a cada 120 segundos
 TickTwo timerAtivarRsto([]() { iniciarPn532_callback(I2C_SDA, I2C_SCL); }, 100, 1, MILLIS);//necessario uso de função lambda para passar os parametros
 TickTwo timerGerenciarErros(gerenciar_erros_callback, 2000, 0, MILLIS);
 TickTwo timerDesativarRele1(desativar_rele1_callback, DURACAO_RELE, 1, MILLIS);
@@ -103,25 +104,39 @@ void WiFiEvent(WiFiEvent_t event) {
 void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
     switch(type) {
       case WStype_TEXT:
-        if (strcmp((char*)payload, "ativar 1") == 0) {
-          ativarRele();
-        } 
-        else if (strcmp((char*)payload, "ativar 2") == 0) {
-          ativarRele2();
-        }
-        else if (strcmp((char*)payload, "firmware") == 0) {
-          uint32_t versiondata = nfc.getFirmwareVersion(); // Verificar se o PN532 foi detectado
-          if (versiondata) {
-            String firmware = "PN532 Firmware: ";
-            firmware += String(versiondata);
-            webSocket.sendTXT(firmware); // Enviar versão do firmware para o cliente
-          } 
-          else {
-            webSocket.sendTXT("Erro: PN532 não encontrado"); // PN532 não encontrado, enviar mensagem de erro
+        // Verifica se o payload começa com '{', indicando que é um JSON
+        if (payload[0] == '{') {
+          String mensagemRecebida = String((char*)payload).substring(0, length);
+          StaticJsonDocument<512> jsonDoc;
+          DeserializationError error = deserializeJson(jsonDoc, mensagemRecebida);
+          if (!error) {
+            // Verificar se o campo "accio_machine" existe exatamente no JSON recebido
+            if (jsonDoc.containsKey("accio_machine") && !jsonDoc.containsKey("accio_machine_response")) {
+              
+            }
+          } else {
+            webSocket.sendTXT("Erro: JSON inválido recebido.");
           }
-        }
-        else if (strcmp((char*)payload, "log") == 0) {
-          enviarLogJson();
+        } else {
+
+          if (strcmp((char*)payload, "activate all") == 0) {
+            ativarRele();
+            ativarRele2();
+          } 
+          else if (strcmp((char*)payload, "firmware") == 0) {
+            uint32_t versiondata = nfc.getFirmwareVersion(); 
+            if (versiondata) {
+              String firmware = "PN532 Firmware: ";
+              firmware += String(versiondata);
+              webSocket.sendTXT(firmware); 
+            } 
+            else {
+              webSocket.sendTXT("Erro: PN532 não encontrado"); 
+            }
+          }
+          else if (strcmp((char*)payload, "log") == 0) {
+            LogResponse();
+          }
         }
         break;
       default:
@@ -163,13 +178,13 @@ void ler_rfid_callback() {
     //verificar se o UID mudou ou se é a primeira vez que é lido
     if (uidAtual!= uidAnterior || uidAtual == "") {
       uidAnterior = uidAtual;
-      webSocket.sendTXT("inserido:" + uidAtual);    // Envia o UID para todos os clientes conectados via WebSocket
+      enviarInsertedJson(uidAtual); 
     }
   }
   // Se não foi encontrado um cartão RFID, verifica se o ultimo UID lido foi diferente de vazio
   else {
     if (uidAnterior!= "") {
-      webSocket.sendTXT("removido:" + uidAnterior); // Envia o UID para todos os clientes conectados via WebSocket
+      enviarRemovedJson(uidAnterior); 
       uidAnterior = "";
     }
   }
@@ -234,8 +249,64 @@ String obterEnderecoMAC() {
   String macString = ETH.macAddress();
   return macString;
 }
+void enviarInsertedJson(const String& UID_INSERTED) {
+  // Criar o objeto JSON
+  StaticJsonDocument<256> jsonDoc;
 
-void enviarLogJson() {
+  // Gerar um requestId aleatório
+  String requestId = String(random(10000000, 99999999));
+
+  // Obter o endereço MAC
+  String macAddress = obterEnderecoMAC();
+
+  // Adicionar dados ao JSON
+  jsonDoc["report"]["inserted"]["rfid"] = UID_INSERTED;
+  jsonDoc["report"]["inserted"]["station_mac"] = macAddress;
+  jsonDoc["requestId"] = requestId;
+
+  // Converter JSON para String
+  String jsonString;
+  serializeJson(jsonDoc, jsonString);
+
+  // Enviar JSON para todos os clientes conectados
+  webSocket.sendTXT(jsonString);
+}
+
+void enviarRemovedJson(const String& UID_REMOVED) {
+  // Criar o objeto JSON
+  StaticJsonDocument<256> jsonDoc;
+
+  // Gerar um requestId aleatório
+  String requestId = String(random(10000000, 99999999));
+
+  // Adicionar dados ao JSON
+  jsonDoc["report"]["removed"]["rfid"] = UID_REMOVED;
+  jsonDoc["requestId"] = requestId;
+
+  // Converter JSON para String
+  String jsonString;
+  serializeJson(jsonDoc, jsonString);
+
+  // Enviar JSON para todos os clientes conectados
+  webSocket.sendTXT(jsonString);
+}
+
+void accioMachineResponse(const String& UID_ATUAL){
+StaticJsonDocument<256> responseJson;
+
+String requestId = String(random(10000000, 99999999));
+
+responseJson["accio_machine_response"]["rfid"] = UID_ATUAL; 
+responseJson["accio_machine_response"]["childId"] = obterEnderecoMAC(); 
+responseJson["requestId"] = requestId;
+
+String respostaString;
+
+serializeJson(responseJson, respostaString);
+
+webSocket.sendTXT(respostaString);
+}
+void LogResponse() {
   // Criar o objeto JSON
   StaticJsonDocument<1024> jsonDoc;
 
@@ -249,8 +320,11 @@ void enviarLogJson() {
   jsonDoc["log"]["deviceInfo"]["macAddress"] = macAddress;
   jsonDoc["log"]["deviceInfo"]["ipAddress"] = ipAddress;
 
+  // Adicionar o RFID ao log
+  jsonDoc["log"]["deviceInfo"]["rfid"] = uidAtual; // uidAtual contém o RFID atual
+
   // Obter a temperatura do núcleo
-  float temperature = 40.0; // obter temperatura do nucleo xtensa
+  float temperature = 40.0; // obter temperatura do núcleo Xtensa
   jsonDoc["log"]["systemStatus"]["coreTemperature"] = temperature;
 
   // Obter o tempo de atividade
@@ -261,6 +335,8 @@ void enviarLogJson() {
   uint32_t versiondata = nfc.getFirmwareVersion();
   jsonDoc["log"]["pn532Firmware"]["version"] = String(versiondata);
   jsonDoc["log"]["pn532Firmware"]["status"] = (versiondata > 0) ? "OK" : "Erro";
+
+
 
   // Converter JSON para String
   String jsonString;

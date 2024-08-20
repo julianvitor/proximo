@@ -7,6 +7,7 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
 import android.os.*
+import android.util.Log
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import org.java_websocket.server.WebSocketServer
@@ -16,17 +17,21 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.net.InetSocketAddress
 
+private const val WEBSOCKET_PORT = 8080
+
 class WebSocketService() : Service(), Parcelable {
 
     private val binder = LocalBinder()
     private val handler = Handler(Looper.getMainLooper())
     private var dbHelper: DatabaseHelper? = null
-    private var currentUser: String? = null
+    private var currentUserEmail: String? = null
     private lateinit var webSocketServer: MyWebSocketServer
 
 
+
+    //passar o usuario atual
     constructor(parcel: Parcel) : this() {
-        currentUser = parcel.readString()
+        currentUserEmail = parcel.readString()
     }
 
     // Classe interna para a ligação do serviço
@@ -35,21 +40,17 @@ class WebSocketService() : Service(), Parcelable {
     }
 
     // Ciclo de vida do serviço
+    @SuppressLint("ForegroundServiceType")
     override fun onCreate() {
         super.onCreate()
         dbHelper = DatabaseHelper(this)
         startWebSocketServer()
+        val notification = createNotification()
+        startForeground(1, notification)
     }
 
     override fun onBind(intent: Intent?): IBinder {
         return binder
-    }
-
-    @SuppressLint("ForegroundServiceType")
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val notification = createNotification()
-        startForeground(1, notification)
-        return START_STICKY
     }
 
     override fun onDestroy() {
@@ -58,25 +59,22 @@ class WebSocketService() : Service(), Parcelable {
     }
 
     // Métodos para controle do usuário atual
-    fun setCurrentUser(user: String) {
-        currentUser = user
+    fun setCurrentEmail(user: String) {
+        currentUserEmail = user
     }
 
-    fun setCurrentUserIndefinido() {
-        currentUser = "indefinido"
+    fun setCurrentEmailIndefinido() {
+        currentUserEmail = "indefinido"
     }
 
     private fun startWebSocketServer() {
-        val port = 8080
-        webSocketServer = MyWebSocketServer(InetSocketAddress(port), this) // Passe o serviço
+        webSocketServer = MyWebSocketServer(InetSocketAddress(WEBSOCKET_PORT), this) // Passe o serviço
         webSocketServer.start()
-        showToast("Servidor WebSocket iniciado na porta $port")
     }
-
 
     private fun stopWebSocketServer() {
         webSocketServer.stop(1000)
-        showToast("Servidor WebSocket parado")
+        showToast("WebsocketServer parado")
     }
 
     // Manipulação de mensagens WebSocket
@@ -84,8 +82,8 @@ class WebSocketService() : Service(), Parcelable {
         when {
             // Inserção
             message.startsWith("inserido:") -> {
-                val uid = message.substringAfter(":").trim()
-                dbHelper?.registrarDevolucao(uid)
+                val rfid = message.substringAfter(":").trim()
+                dbHelper?.registrarDevolucao(rfid)
                 showToast("Sucesso: devolvido")
                 conn.send("Sucesso: devolvido")
             }
@@ -93,58 +91,63 @@ class WebSocketService() : Service(), Parcelable {
             // Remoção
             message.startsWith("removido:") -> {
                 val uid = message.substringAfter(":").trim()
-                when {
-                    currentUser == null -> {
+                when{
+                    currentUserEmail == null -> {
                         showToast("Retirada inválida: Usuário não autenticado")
                         conn.send("Retirada inválida: Usuário não autenticado")
                     }
-                    currentUser == "indefinido" -> {
+                    currentUserEmail == "indefinido" -> {
                         showToast("Retirada inválida: Usuário indefinido")
                         conn.send("Retirada inválida: Usuário indefinido")
                     }
                     else -> {
-                        dbHelper?.registrarUso(currentUser!!, uid, "doca")
+                        dbHelper?.registrarUso(currentUserEmail!!, uid, "doca")
                         showToast("Sucesso: removido")
                         conn.send("Sucesso: removido")
-                        currentUser = null
+                        currentUserEmail = null
                         sendBroadcast(Intent("com.example.com.proximo.ali.ACTION_SUCCESS_REMOVIDO"))
                     }
                 }
             }
 
-            // Resposta de máquina (JSON accio_machine_response)
+            // JSON
             message.startsWith("{") -> {
-                try {
-                    val jsonObject = JSONObject(message)
-
-                    if (jsonObject.has("accio_machine_response")) {
-                        // Se contém "accio_machine_response", processar como resposta de máquina
-                        dbHelper?.addToMaquinasPresentes(jsonObject)
-                        showToast("Informações de máquina salvas com sucesso")
-                    } else if (jsonObject.has("log")) {
-                        // Se contém "log", processar como log
-                        dbHelper?.addLogToFile(jsonObject)
-                        showToast("Log salvo com sucesso")
-                    } else {
-                        // Outro JSON
-                        showToast("Outro JSON recebido: $jsonObject")
-                        conn.send("Outro JSON processado com sucesso")
-                    }
-                } catch (e: JSONException) {
-                    showToast("Erro ao processar o JSON: ${e.message}")
-                    conn.send("Erro ao processar o JSON")
-                } catch (e: Exception) {
-                    showToast("Erro inesperado: ${e.message}")
-                    conn.send("Erro inesperado ao processar o JSON")
-                }
+                receiveJsonHandler(message, conn)
             }
 
             else -> {
-                showToast("Mensagem recebida: $message")
+                showToast("WebSocketMessage inesperada: $message")
             }
         }
     }
 
+    // Função para lidar com JSON
+    private fun receiveJsonHandler(message: String, conn: WebSocket) {
+        try {
+            val jsonObject = JSONObject(message)
+            when {
+                jsonObject.has("accio_machine_response") -> {
+                    dbHelper?.addToMaquinasPresentes(jsonObject)
+                }
+                jsonObject.has("log") -> {
+                    // Se contém "log", processar como log
+                    dbHelper?.addLogToFile(jsonObject)
+                    showToast("Log.json salvo com sucesso")
+                }
+                else -> {
+                    // Outro JSON
+                    showToast("Json inesperado: $jsonObject")
+                    Log.i("websocketService", "Json inesperado recebido: $jsonObject")
+                }
+            }
+        } catch (e: JSONException) {
+            showToast("Erro ao processar o JSON: ${e.message}")
+            Log.e("websocketService", "Erro ao processar o JSON recebido: ${e.message}")
+        } catch (e: Exception) {
+            showToast("Erro inesperado: ${e.message}")
+            Log.e("websocketService", "Erro inesperado: ${e.message}")
+        }
+    }
 
     // Método para enviar uma mensagem para todos os clientes conectados
     fun broadcast(mensagem: String) {
@@ -156,7 +159,6 @@ class WebSocketService() : Service(), Parcelable {
             showToast("Servidor WebSocket não iniciado")
         }
     }
-
 
     // Criação e gerenciamento de notificações
     private fun createNotification(): Notification {
@@ -191,7 +193,7 @@ class WebSocketService() : Service(), Parcelable {
     ) : WebSocketServer(address) {
 
         override fun onOpen(conn: WebSocket, handshake: ClientHandshake) {
-            conn.send("Conexão WebSocket estabelecida")
+            conn.send("Cliente conectado")
         }
 
         override fun onClose(conn: WebSocket, code: Int, reason: String, remote: Boolean) {
@@ -199,23 +201,22 @@ class WebSocketService() : Service(), Parcelable {
         }
 
         override fun onMessage(conn: WebSocket, message: String) {
-            // Chame diretamente o método handleWebSocketMessage do serviço
             service.handleWebSocketMessage(message, conn)
         }
 
         override fun onError(conn: WebSocket?, ex: Exception) {
+            Log.e("WebSocketService", "Erro no WebSocketServer")
+            service.showToast("Erro no WebsocketServer")
             ex.printStackTrace()
         }
 
         override fun onStart() {
-            service.showToast("Servidor WebSocket iniciado ")
+            service.showToast("Servidor WebSocket iniciado na porta: $WEBSOCKET_PORT")
         }
     }
-
-
     // Implementação da interface Parcelable
     override fun writeToParcel(parcel: Parcel, flags: Int) {
-        parcel.writeString(currentUser)
+        parcel.writeString(currentUserEmail)
     }
 
     override fun describeContents(): Int {

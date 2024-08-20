@@ -1,0 +1,17 @@
+[
+    {
+      "id": "3ca61935-2b3b-45aa-970a-4bd390194bfa",
+      "name": "30 AM",
+      "rfid": "12334444330",
+      "status": "MAINTENANCE",
+      "stationId": "d1874456-28e9-43d1-a627-4dff3766b53c"
+    },
+    {
+      "id": "42942fb8-a40b-4753-a8d0-427b7a5a21dc",
+      "name": "Ecolift 70",
+      "rfid": "12345678910",
+      "status": "ACTIVE",
+      "stationId": "a2b7fab1-b8f0-4c85-b5a4-c629bbf12936"
+    }
+  ]
+  

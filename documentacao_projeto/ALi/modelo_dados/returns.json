@@ -1,0 +1,13 @@
+[
+    {
+      "end_time": "2024-08-19T10:30:00.000Z",
+      "rfid": "041A2B3C4D5E6F",
+      "station_mac": "AA:BB:CC:DD:EE:FF"
+    },
+    {
+      "end_time": "2024-08-19T11:45:00.000Z",
+      "rfid": "051B2C3D4E5F7G",
+      "station_mac": "BB:CC:DD:EE:FF:00"
+    }
+  ]
+  

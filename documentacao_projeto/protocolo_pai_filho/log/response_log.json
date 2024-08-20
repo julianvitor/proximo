@@ -12,6 +12,9 @@
         "pn532Firmware": {
             "version": "1.6.8",                
             "status": "OK"                    
+        },
+        "machine": {
+            "rfid": "1234567890"
         }
     },
     "requestId": "12345678"
