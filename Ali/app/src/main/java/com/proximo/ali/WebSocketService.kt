@@ -80,12 +80,9 @@ class WebSocketService() : Service(), Parcelable {
     // Manipulação de mensagens WebSocket
     private fun handleWebSocketMessage(message: String, conn: WebSocket) {
         when {
-            // Inserção
-            message.startsWith("inserido:") -> {
-                val rfid = message.substringAfter(":").trim()
-                dbHelper?.registrarDevolucao(rfid)
-                showToast("Sucesso: devolvido")
-                conn.send("Sucesso: devolvido")
+            // JSON RECEBIDO?
+            message.startsWith("{") -> {
+                receiveJsonHandler(message, conn)
             }
 
             // Remoção
@@ -101,19 +98,14 @@ class WebSocketService() : Service(), Parcelable {
                         conn.send("Retirada inválida: Usuário indefinido")
                     }
                     else -> {
-                        dbHelper?.registrarUso(currentUserEmail!!, uid, "doca")
+                        //dbHelper?.registrarUso(currentUserEmail!!, uid, "doca")
                         showToast("Sucesso: removido")
-                        conn.send("Sucesso: removido")
                         currentUserEmail = null
                         sendBroadcast(Intent("com.example.com.proximo.ali.ACTION_SUCCESS_REMOVIDO"))
                     }
                 }
             }
 
-            // JSON
-            message.startsWith("{") -> {
-                receiveJsonHandler(message, conn)
-            }
 
             else -> {
                 showToast("WebSocketMessage inesperada: $message")
@@ -126,24 +118,70 @@ class WebSocketService() : Service(), Parcelable {
         try {
             val jsonObject = JSONObject(message)
             when {
+                //requisitar maquinas presentes
                 jsonObject.has("accio_machine_response") -> {
                     dbHelper?.addToMaquinasPresentes(jsonObject)
                 }
-                jsonObject.has("log") -> {
-                    // Se contém "log", processar como log
+
+                jsonObject.has("response_log") -> {
                     dbHelper?.addLogToFile(jsonObject)
                     showToast("Log.json salvo com sucesso")
                 }
+
+                jsonObject.has("inserted") -> {
+                    try {
+                        dbHelper?.addToReturns(jsonObject)
+                        //dbHelper?.createReturnLoans() PAREI AQUI MDS DO CEU
+                        showToast("Sucesso: devolvido")
+
+                    }
+                    catch (e: Exception) {
+                        // Exibe a mensagem da exceção no Toast
+                        showToast("Erro ao registrar devolução: ${e.message}")
+                    }
+
+                }
+
+
+                jsonObject.has("removed")->{
+                    try {
+                        when{
+                            currentUserEmail == null -> {
+                                showToast("Retirada inválida: Usuário não autenticado")
+                                conn.send("Retirada inválida: Usuário não autenticado")
+                            }
+                            currentUserEmail == "indefinido" -> {
+                                showToast("Retirada inválida: Usuário indefinido")
+                                conn.send("Retirada inválida: Usuário indefinido")
+                            }
+                            else -> {
+                                //dbHelper?.registrarUso(currentUserEmail!!, uid, "doca")
+                                showToast("Sucesso: removido")
+                                currentUserEmail = null
+                                sendBroadcast(Intent("com.example.com.proximo.ali.ACTION_SUCCESS_REMOVIDO"))
+                            }
+                        }
+
+                    }
+                    catch (e: Exception) {
+
+                    }
+                }
+
                 else -> {
                     // Outro JSON
                     showToast("Json inesperado: $jsonObject")
                     Log.i("websocketService", "Json inesperado recebido: $jsonObject")
                 }
             }
-        } catch (e: JSONException) {
+
+
+        }
+        catch (e: JSONException) {
             showToast("Erro ao processar o JSON: ${e.message}")
             Log.e("websocketService", "Erro ao processar o JSON recebido: ${e.message}")
-        } catch (e: Exception) {
+        }
+        catch (e: Exception) {
             showToast("Erro inesperado: ${e.message}")
             Log.e("websocketService", "Erro inesperado: ${e.message}")
         }

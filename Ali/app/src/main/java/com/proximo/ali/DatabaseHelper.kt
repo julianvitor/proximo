@@ -4,14 +4,19 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import android.widget.Toast
 
 import org.json.JSONArray
+import org.json.JSONException
 import org.json.JSONObject
 
 import java.io.File
 import java.io.IOException
-import java.util.*
+
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+import java.util.TimeZone
+
 
 data class UsuarioUsoInfo(
     val email: String,
@@ -28,46 +33,97 @@ class DatabaseHelper(context: Context) {
     private val handler = Handler(Looper.getMainLooper())
     private val context: Context = context.applicationContext
 
-    fun registrarDevolucao(rfid: String) {
-        Log.d("DatabaseHelper", "Registrando devolução para UID: $rfid")
 
-        val usosJson = loadJsonFromFile(removalsFileName) ?: JSONObject()
-        val usosArray = usosJson.optJSONArray("usos") ?: JSONArray()
 
-        var devolucaoRegistrada = false
+    // Função para enriquecer o JSON
+    fun createReturnLoans(
+        returnsJson: JSONObject,
+        openLoansJson: JSONObject,
+        maquinascatalogJson: JSONArray,
+        stationsJson: JSONArray
+    ): JSONObject {
+        val createPatches = JSONArray()
 
-        for (i in 0 until usosArray.length()) {
-            val uso = usosArray.optJSONObject(i)
-            if (uso.optString("rfid") == rfid && !uso.has("devolucao")) {
-                uso.put("devolucao", getDataHoraAtual())
-                devolucaoRegistrada = true
-                Log.d("DatabaseHelper", "Devolução registrada para UID: $rfid")
+        val returns = returnsJson.getJSONArray("returns")
+        val openLoans = openLoansJson.getJSONArray("openLoans").toList()
+        val maquinascatalog = maquinascatalogJson.toList()
+        val stations = stationsJson.toList()
+
+        // Itera sobre cada item do returns.json
+        for (i in 0 until returns.length()) {
+            val returnItem = returns.getJSONObject(i)
+            val rfid = returnItem.getString("rfid")
+            val endTime = returnItem.getString("end_time")
+            val stationMac = returnItem.getString("station_mac")
+
+            // Encontra a machineId correspondente no maquinascatalog.json
+            val machineId = maquinascatalog.firstOrNull { it.getString("rfid") == rfid }?.getString("id")
+
+            // Encontra o loan com a data mais recente para a machineId
+            val loan = openLoans
+                .filter { it.getJSONObject("attributes").getString("machineId") == machineId }
+                .maxByOrNull { it.getJSONObject("attributes").getString("start_time") }
+
+            // Encontra o stationId correspondente no stations.json
+            val stationId = stations.firstOrNull { it.getString("station_mac") == stationMac }?.getString("stationId")
+
+            if (loan != null && stationId != null) {
+                // Cria o novo objeto enriquecido
+                val patchItem = JSONObject()
+                patchItem.put("end_time", endTime)
+                patchItem.put("endStationId", stationId)
+                patchItem.put("id", loan.getJSONObject("attributes").getString("id"))
+
+                createPatches.put(patchItem)
             }
         }
 
-        writeJsonToFile(usosJson.toString(), removalsFileName)
-        if (!devolucaoRegistrada) {
-            Log.w("DatabaseHelper", "Nenhuma devolução registrada para UID: $rfid")
-        }
+        // Retorna o JSON final
+        return JSONObject().put("createPatches", createPatches)
     }
 
-    fun registrarUso(email: String, rfid: String, doca: String) {
-        Log.d("DatabaseHelper", "Registrando uso para o email: $email e UID: $rfid")
+    // Extensão para converter JSONArray em List<JSONObject>
+    fun JSONArray.toList(): List<JSONObject> =
+        (0 until length()).map { getJSONObject(it) }
 
-        val usosJson = loadJsonFromFile(removalsFileName) ?: JSONObject()
-        val usosArray = usosJson.optJSONArray("usos") ?: JSONArray()
 
-        val novoUso = JSONObject()
-        novoUso.put("email", email)
-        novoUso.put("retirada", getDataHoraAtual())
-        novoUso.put("rfid", rfid)
-        novoUso.put("doca", doca)
-        usosArray.put(novoUso)
+    fun addToReturns(returnJson: JSONObject) {
+        Log.i("DatabaseHelper", "Adicionando retorno ao returns.json")
+        val returnsFileName = "returns.json"
 
-        usosJson.put("usos", usosArray)
-        writeJsonToFile(usosJson.toString(), removalsFileName)
+        try {
+            // Lê o conteúdo atual do arquivo returns.json
+            val currentJson = loadJsonFromFile(returnsFileName)
+            val currentReturnsArray = currentJson?.optJSONArray("returns") ?: JSONArray()
 
-        Log.d("DatabaseHelper", "Uso registrado para o email: $email e UID: $rfid")
+            // Adiciona a data e hora atual ao JSON de retorno
+            val currentTime = getDataHoraAtual()
+            val insertedObject = returnJson.optJSONObject("inserted") ?: JSONObject()
+            insertedObject.put("end_time", currentTime)
+
+            // Cria um novo objeto JSON para adicionar ao array de retornos
+            val newReturnObject = JSONObject()
+            newReturnObject.put("rfid", insertedObject.optString("rfid"))
+            newReturnObject.put("station_mac", insertedObject.optString("station_mac"))
+            newReturnObject.put("end_time", currentTime)
+
+            // Adiciona o novo objeto ao array existente
+            currentReturnsArray.put(newReturnObject)
+
+            // Atualiza o JSON com o array de retornos
+            val updatedJson = JSONObject()
+            updatedJson.put("returns", currentReturnsArray)
+
+            // Escreve o JSON atualizado de volta para o arquivo
+            writeJsonToFile(updatedJson.toString(4), returnsFileName)
+
+            Log.i("DatabaseHelper", "Retorno adicionado com sucesso")
+
+        } catch (e: JSONException) {
+            Log.e("DatabaseHelper", "Erro ao processar JSON", e)
+        } catch (e: IOException) {
+            Log.e("DatabaseHelper", "Erro ao ler ou escrever no arquivo", e)
+        }
     }
 
     fun verificarCredenciais(email: String, pin: String): Boolean {
@@ -125,7 +181,10 @@ class DatabaseHelper(context: Context) {
             )
         }
 
-        Log.d("DatabaseHelper", "Total de usuários e retiradas/devoluções obtidos: ${usuariosERetiradasDevolucao.size}")
+        Log.d(
+            "DatabaseHelper",
+            "Total de usuários e retiradas/devoluções obtidos: ${usuariosERetiradasDevolucao.size}"
+        )
 
         return usuariosERetiradasDevolucao
     }
@@ -138,32 +197,43 @@ class DatabaseHelper(context: Context) {
         try {
             if (file.exists()) {
                 val existingContent = file.readText()
-                val jsonArray = if (existingContent.isNotEmpty()) { JSONArray(existingContent) } else { JSONArray() }
+                val jsonArray = if (existingContent.isNotEmpty()) {
+                    JSONArray(existingContent)
+                } else {
+                    JSONArray()
+                }
                 jsonArray.put(machineJson)
                 writeJsonToFile(jsonArray.toString(4), fileName)
                 Log.i("DatabaseHelper", "Salvo em maquinasPresentes.json")
-            }
-            else {
-                Log.i("DatabaseHelper","maquinasPresentes.json não existe")
+            } else {
+                Log.i("DatabaseHelper", "maquinasPresentes.json não existe")
                 val jsonArray = JSONArray()
                 jsonArray.put(machineJson)
                 writeJsonToFile(jsonArray.toString(4), fileName)
-                Log.i("DatabaseHelper","Criado e salvo em maquinasPresentes.json")
+                Log.i("DatabaseHelper", "Criado e salvo em maquinasPresentes.json")
             }
         } catch (e: IOException) {
-            Log.e("DatabaseHelper", "Erro ao adicionar máquina ao arquivo maquinasPresentes.json", e)
+            Log.e(
+                "DatabaseHelper",
+                "Erro ao adicionar máquina ao arquivo maquinasPresentes.json",
+                e
+            )
         }
     }
 
     fun addLogToFile(logJson: JSONObject) {
-        Log.d("DatabaseHelper", "Adicionando log ao arquivo log.json")
+        Log.i("DatabaseHelper", "Adicionando log ao arquivo log.json")
 
         val logFileName = "log.json"
         val file = File(context.filesDir, logFileName)
         try {
             if (file.exists()) {
                 val existingContent = file.readText()
-                val jsonArray = if (existingContent.isNotEmpty()) { JSONArray(existingContent) } else { JSONArray() }
+                val jsonArray = if (existingContent.isNotEmpty()) {
+                    JSONArray(existingContent)
+                } else {
+                    JSONArray()
+                }
 
                 jsonArray.put(logJson)
 
@@ -213,22 +283,6 @@ class DatabaseHelper(context: Context) {
         return false
     }
 
-    fun cadastrarUsuario(usuario: JSONObject) {
-        val usuariosJson = loadJsonFromFile(usersFileName) ?: JSONObject().apply {
-            put("attributes", JSONObject().apply {
-                put("users", JSONArray())
-            })
-        }
-        val attributesJson = usuariosJson.optJSONObject("attributes") ?: JSONObject().apply {
-            put("users", JSONArray())
-        }
-        val usuariosArray = attributesJson.optJSONArray("users") ?: JSONArray()
-        usuariosArray.put(usuario)
-        attributesJson.put("users", usuariosArray)
-        usuariosJson.put("attributes", attributesJson)
-        writeJsonToFile(usuariosJson.toString(), usersFileName)
-    }
-
     private fun loadJsonFromFile(fileName: String): JSONObject? {
         Log.d("DatabaseHelper", "Carregando JSON do arquivo: $fileName")
 
@@ -250,7 +304,6 @@ class DatabaseHelper(context: Context) {
 
     private fun writeJsonToFile(jsonData: String, fileName: String) {
         Log.d("DatabaseHelper", "Escrevendo JSON no arquivo: $fileName")
-
         try {
             val fileOutputStream = context.openFileOutput(fileName, Context.MODE_PRIVATE)
             fileOutputStream.write(jsonData.toByteArray())
@@ -261,14 +314,14 @@ class DatabaseHelper(context: Context) {
     }
 
     private fun getDataHoraAtual(): String {
-        val calendar = Calendar.getInstance()
-        val year = calendar.get(Calendar.YEAR)
-        val month = calendar.get(Calendar.MONTH) + 1 // Mês é zero baseado
-        val day = calendar.get(Calendar.DAY_OF_MONTH)
-        val hour = calendar.get(Calendar.HOUR_OF_DAY)
-        val minute = calendar.get(Calendar.MINUTE)
-        val second = calendar.get(Calendar.SECOND)
+        // Cria uma instância de Calendar
+        val calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
 
-        return String.format("%04d-%02d-%02d %02d:%02d:%02d", year, month, day, hour, minute, second)
+        // Define o formato desejado
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
+        dateFormat.timeZone = TimeZone.getTimeZone("UTC")
+
+        // Retorna a data formatada
+        return dateFormat.format(calendar.time)
     }
 }
