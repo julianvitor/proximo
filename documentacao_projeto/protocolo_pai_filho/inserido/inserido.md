@@ -6,11 +6,9 @@ A resposta do filho deve ser no seguinte formato:
 
 ```json
 {
-  "report": {
-    "inserted": {
-      "rfid": "041A2B3C4D5E6F",
-      "station_mac": "AA:BB:CC:DD:EE:FF"
-    }
+  "inserted": {
+    "rfid": "041A2B3C4D5E6F",
+    "station_mac": "AA:BB:CC:DD:EE:FF"
   },
   "requestId": "12345678"
 }

@@ -1,4 +1,5 @@
-[
+{
+  "returns":[
     {
       "end_time": "2024-08-19T10:30:00.000Z",
       "rfid": "041A2B3C4D5E6F",
@@ -10,4 +11,7 @@
       "station_mac": "BB:CC:DD:EE:FF:00"
     }
   ]
-  
+}
+
+
+//primeiro registro de devolução agrupando informações fornecida diretamente pelas estacoes + data

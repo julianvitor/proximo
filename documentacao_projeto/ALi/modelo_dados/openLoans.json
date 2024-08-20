@@ -1,0 +1,26 @@
+{
+    "machineId": "42942fb8-a40b-4753-a8d0-427b7a5a21dc",
+    "startStationId": "a2b7fab1-b8f0-4c85-b5a4-c629bbf12936",
+    "userId": "29c6f49a-1a5f-4c95-b145-f2a85526a06e",
+    "start_time": "2024-08-18T04:01:57.696Z"
+}
+
+
+{
+    "attributes": {
+        "id": "bae0a8d3-7841-4b5b-8f84-0e6778a0ffe1",
+        "loan_number": 32,
+        "start_time": "2024-08-18T04:01:57.696Z",
+        "end_time": null,
+        "value": 0,
+        "machineId": "42942fb8-a40b-4753-a8d0-427b7a5a21dc",
+        "userId": "29c6f49a-1a5f-4c95-b145-f2a85526a06e",
+        "companyId": "495f3404-cbe0-4051-8ee5-4b6da3d0c254",
+        "startStationId": "a2b7fab1-b8f0-4c85-b5a4-c629bbf12936",
+        "endStationId": null
+    }
+}
+
+
+
+//Agregado das respostas do endpoint de criar um emprestimo, aguardando devolução returns

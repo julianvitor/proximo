@@ -1,18 +1,18 @@
 {
-    "removals": [
-      {
-        "rfid": "041A2B3C4D5E6F",
-        "station_mac": "AA:BB:CC:DD:EE:FF",
-        "start_time": "2024-08-19T04:12:42.965Z",
-        "email": "usuario1@example.com"
-      },
-      {
-        "rfid": "11223344556677",
-        "station_mac": "FF:EE:DD:CC:BB:AA",
-        "start_time": "2024-08-19T05:20:10.123Z",
-        "email": "usuario2@example.com"
-      }
-    ]
-  }
+  "removals": [
+    {
+      "rfid": "041A2B3C4D5E6F",
+      "station_mac": "AA:BB:CC:DD:EE:FF",
+      "start_time": "2024-08-19T04:12:42.965Z",
+      "email": "usuario1@example.com"
+    },
+    {
+      "rfid": "11223344556677",
+      "station_mac": "FF:EE:DD:CC:BB:AA",
+      "start_time": "2024-08-19T05:20:10.123Z",
+      "email": "usuario2@example.com"
+    }
+  ]
+}
 
-//primeiro registro de remoção agrupando informações das estações + usuario fornecido na main activity + hora do registro
+// registro de remoção agrupando informações das estações + usuario fornecido na main activity + hora do registro

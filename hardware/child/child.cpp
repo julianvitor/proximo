@@ -253,22 +253,16 @@ void enviarInsertedJson(const String& UID_INSERTED) {
   // Criar o objeto JSON
   StaticJsonDocument<256> jsonDoc;
 
-  // Gerar um requestId aleatório
   String requestId = String(random(10000000, 99999999));
-
-  // Obter o endereço MAC
   String macAddress = obterEnderecoMAC();
 
-  // Adicionar dados ao JSON
-  jsonDoc["report"]["inserted"]["rfid"] = UID_INSERTED;
-  jsonDoc["report"]["inserted"]["station_mac"] = macAddress;
+  jsonDoc["inserted"]["rfid"] = UID_INSERTED;
+  jsonDoc["inserted"]["station_mac"] = macAddress;
   jsonDoc["requestId"] = requestId;
 
-  // Converter JSON para String
   String jsonString;
   serializeJson(jsonDoc, jsonString);
 
-  // Enviar JSON para todos os clientes conectados
   webSocket.sendTXT(jsonString);
 }
 
@@ -311,32 +305,20 @@ void LogResponse() {
   StaticJsonDocument<1024> jsonDoc;
 
   String macAddress = obterEnderecoMAC();
-
-  // Adicionar dados ao JSON
-  jsonDoc["log"]["timestamp"] = "2024-08-10T14:32:00Z";
-  
-  // Obter dados de rede
   String ipAddress = WiFi.localIP().toString();
-  jsonDoc["log"]["deviceInfo"]["macAddress"] = macAddress;
-  jsonDoc["log"]["deviceInfo"]["ipAddress"] = ipAddress;
-
-  // Adicionar o RFID ao log
-  jsonDoc["log"]["deviceInfo"]["rfid"] = uidAtual; // uidAtual contém o RFID atual
-
-  // Obter a temperatura do núcleo
-  float temperature = 40.0; // obter temperatura do núcleo Xtensa
-  jsonDoc["log"]["systemStatus"]["coreTemperature"] = temperature;
-
-  // Obter o tempo de atividade
   unsigned long uptime = millis() / 1000;
-  jsonDoc["log"]["systemStatus"]["uptime"] = String(uptime / 86400) + " days " + String((uptime % 86400) / 3600) + " hours " + String((uptime % 3600) / 60) + " minutes";
-
-  // Obter a versão do firmware do PN532
+  float temperature = 40.0;
   uint32_t versiondata = nfc.getFirmwareVersion();
-  jsonDoc["log"]["pn532Firmware"]["version"] = String(versiondata);
-  jsonDoc["log"]["pn532Firmware"]["status"] = (versiondata > 0) ? "OK" : "Erro";
 
+  jsonDoc["response_log"]["deviceInfo"]["macAddress"] = macAddress;
+  jsonDoc["response_log"]["deviceInfo"]["ipAddress"] = ipAddress;
+  jsonDoc["response_log"]["deviceInfo"]["rfid"] = uidAtual;
 
+  jsonDoc["response_log"]["systemStatus"]["coreTemperature"] = temperature;
+  jsonDoc["response_log"]["systemStatus"]["uptime"] = String(uptime / 86400) + " days " + String((uptime % 86400) / 3600) + " hours " + String((uptime % 3600) / 60) + " minutes";
+
+  jsonDoc["response_log"]["pn532Firmware"]["version"] = String(versiondata);
+  jsonDoc["response_log"]["pn532Firmware"]["status"] = (versiondata > 0) ? "OK" : "Erro";
 
   // Converter JSON para String
   String jsonString;
