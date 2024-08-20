@@ -1,0 +1,23 @@
+{
+    "createPatches": [
+        {
+            "end_time": "2024-08-19T04:12:42.965Z",
+            "endStationId": "a2b7fab1-b8f0-4c85-b5a4-c629bbf12936",
+            "id": "bae0a8d3-7841-4b5b-8f84-0e6778a0ffe1"
+        },
+        {
+            "end_time": "2024-08-19T05:23:30.000Z",
+            "endStationId": "e6d6b9b0-2f3d-4a47-9d87-63a1dfc09eab",
+            "id": "e1d3e5f8-8239-4c7b-9f21-6a5b7a9d1b9d"
+        },
+        {
+            "end_time": "2024-08-19T06:45:00.000Z",
+            "endStationId": "b8e4cd3f-6f9c-4b8c-847c-eaba7d0ae15e",
+            "id": "f3c7d8a1-42d8-4f3b-8376-0a2b4c6f7b8c"
+        }
+    ]
+}
+
+
+// Quando feita inserção, openLoan mais recente da mesma maquina é finalizada no patch.
+// "id" é o loanId a ser passada na url, recuperado de openLoans.json

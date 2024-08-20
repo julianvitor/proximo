@@ -1,0 +1,35 @@
+{
+    "createLoans": [
+        {
+            "machineId": "42942fb8-a40b-4753-a8d0-427b7a5a21dc",
+            "startStationId": "a2b7fab1-b8f0-4c85-b5a4-c629bbf12936",
+            "userId": "29c6f49a-1a5f-4c95-b145-f2a85526a06e",
+            "start_time": "2024-08-18T04:01:57.696Z"
+        },
+        {
+            "machineId": "6d8a7e14-5e14-49b6-9e9a-c7b7f8c7fef2",
+            "startStationId": "e6d6b9b0-2f3d-4a47-9d87-63a1dfc09eab",
+            "userId": "7f6b5a3c-bcbf-4c89-9e71-d2ac0d015a0e",
+            "start_time": "2024-08-18T09:15:30.123Z"
+        },
+        {
+            "machineId": "f4b2a0d8-3c6d-4f84-9b6c-3d6364a2a5c7",
+            "startStationId": "b8e4cd3f-6f9c-4b8c-847c-eaba7d0ae15e",
+            "userId": "e2d5a2b4-0f7c-4e8a-bf94-9b5e2c8d9013",
+            "start_time": "2024-08-18T14:22:11.789Z"
+        }
+    ]
+}
+
+
+// Armazena dados dos loans abertos a serem registrados na api.
+
+// "machineId" recuperado de maquinasCatalog.json usando rfid, "startStationId" recuperado de stations.json.
+
+// "userId" recuperado de syncGeral.json com email.
+
+// removals.json -> createLoan.json -> openLoans.json
+
+
+
+// Uma vez feito o patch, o loan aberto é removido do arquivo.

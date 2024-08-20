@@ -1,0 +1,98 @@
+preciso fazer uma função que enrriquece um json a apartir de outros. vou mostrar exemplos.  
+returns.json({
+  "returns":[
+    {
+      "end_time": "2024-08-19T10:30:00.000Z",
+      "rfid": "041A2B3C4D5E6F",
+      "station_mac": "AA:BB:CC:DD:EE:FF"
+    },
+    {
+      "end_time": "2024-08-19T11:45:00.000Z",
+      "rfid": "051B2C3D4E5F7G",
+      "station_mac": "BB:CC:DD:EE:FF:00"
+    }
+  ]
+}
+)
+
+o dado "id" vem de openLoans.json ({
+
+  "openLoans": [
+      {
+          "attributes": {
+              "id": "bae0a8d3-7841-4b5b-8f84-0e6778a0ffe1",
+              "loan_number": 32,
+              "start_time": "2024-08-18T04:01:57.696Z",
+              "end_time": null,
+              "value": 0,
+              "machineId": "42942fb8-a40b-4753-a8d0-427b7a5a21dc",
+              "userId": "29c6f49a-1a5f-4c95-b145-f2a85526a06e",
+              "companyId": "495f3404-cbe0-4051-8ee5-4b6da3d0c254",
+              "startStationId": "a2b7fab1-b8f0-4c85-b5a4-c629bbf12936",
+              "endStationId": null
+          }
+      },
+      {
+          "attributes": {
+              "id": "e1d3e5f8-8239-4c7b-9f21-6a5b7a9d1b9d",
+              "loan_number": 33,
+              "start_time": "2024-08-18T10:23:45.000Z",
+              "end_time": null,
+              "value": 100,
+              "machineId": "6d8a7e14-5e14-49b6-9e9a-c7b7f8c7fef2",
+              "userId": "7f6b5a3c-bcbf-4c89-9e71-d2ac0d015a0e",
+              "companyId": "e2d5a2b4-0f7c-4e8a-bf94-9b5e2c8d9013",
+              "startStationId": "e6d6b9b0-2f3d-4a47-9d87-63a1dfc09eab",
+              "endStationId": null
+          }
+      }
+     
+  ]
+}
+)
+e para identificar qual elemento deve receber o ID a condiçãe é o que tiver a data mais recente para uma mesma "machineid". cada "machineid" é associada a um unico "rfid" e é recuperada daqui, maquinascatalog.json([
+    {
+      "id": "3ca61935-2b3b-45aa-970a-4bd390194bfa",
+      "name": "30 AM",
+      "rfid": "12334444330",
+      "status": "MAINTENANCE",
+      "stationId": "d1874456-28e9-43d1-a627-4dff3766b53c"
+    },
+    {
+      "id": "42942fb8-a40b-4753-a8d0-427b7a5a21dc",
+      "name": "Ecolift 70",
+      "rfid": "12345678910",
+      "status": "ACTIVE",
+      "stationId": "a2b7fab1-b8f0-4c85-b5a4-c629bbf12936"
+    }
+  ]
+  ) 
+
+o dado "endStationId" vem de stations.json pois cada um tem um unico mac e um unico stationid({
+  "station": {
+    "station_mac": "AA:BB:CC:DD:EE:FF",
+    "stationId": "d1874456-28e9-43d1-a627-4dff3766b53c"
+  }
+}
+)
+
+esse é o objetivo createReturnLoans.json({
+  "createPatches": [
+      {
+          "end_time": "2024-08-19T04:12:42.965Z",
+          "endStationId": "a2b7fab1-b8f0-4c85-b5a4-c629bbf12936",
+          "id": "bae0a8d3-7841-4b5b-8f84-0e6778a0ffe1"
+      },
+      {
+          "end_time": "2024-08-19T05:23:30.000Z",
+          "endStationId": "e6d6b9b0-2f3d-4a47-9d87-63a1dfc09eab",
+          "id": "e1d3e5f8-8239-4c7b-9f21-6a5b7a9d1b9d"
+      },
+      {
+          "end_time": "2024-08-19T06:45:00.000Z",
+          "endStationId": "b8e4cd3f-6f9c-4b8c-847c-eaba7d0ae15e",
+          "id": "f3c7d8a1-42d8-4f3b-8376-0a2b4c6f7b8c"
+      }
+  ]
+}
+)

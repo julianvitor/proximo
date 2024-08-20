@@ -6,11 +6,9 @@ A resposta do filho deve ser no seguinte formato:
 
 ```json
 {
-  "report": {
-    "removed": {
-      "rfid": "041A2B3C4D5E6F",
-      "station_mac": "AA:BB:CC:DD:EE:FF"
-    }
+  "removed": {
+    "rfid": "041A2B3C4D5E6F",
+    "station_mac": "AA:BB:CC:DD:EE:FF"
   },
   "requestId": "12345678"
 }
@@ -20,7 +18,6 @@ A resposta do filho deve ser no seguinte formato:
 
 ### Descrição dos Campos
 
-- **report** (objeto): O objeto principal que contém as informações do evento.
 - **removed** (objeto): Contém dados específicos da operação realizada
 - **rfid**(string): Identificador RFID da máquina.
 - **station_mac**(string):  Endereço MAC da estação(filho).

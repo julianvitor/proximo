@@ -273,10 +273,13 @@ void enviarRemovedJson(const String& UID_REMOVED) {
   // Gerar um requestId aleatório
   String requestId = String(random(10000000, 99999999));
 
-  // Adicionar dados ao JSON
-  jsonDoc["report"]["removed"]["rfid"] = UID_REMOVED;
-  jsonDoc["requestId"] = requestId;
+  String macAddress = obterEnderecoMAC();
 
+  // Adicionar dados ao JSON
+  jsonDoc["removed"]["rfid"] = UID_REMOVED;
+  jsonDoc["removed"]["station_mac"] = macAddress;
+
+  jsonDoc["requestId"] = requestId;
   // Converter JSON para String
   String jsonString;
   serializeJson(jsonDoc, jsonString);

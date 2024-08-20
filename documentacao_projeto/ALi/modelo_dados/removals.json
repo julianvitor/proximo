@@ -15,4 +15,10 @@
   ]
 }
 
-// registro de remoção agrupando informações das estações + usuario fornecido na main activity + hora do registro
+// Registro de remoção agrupando informações das estações 
+
+// metodo addToRemovals() - adiciona as remoçoes para o arquivo removals.json "email" fornecido na main activity, "start_time" hora da devolução.
+
+// removals.json -> createLoan.json
+
+// Uma vez feito o patch, o loan aberto é removido do arquivo.
