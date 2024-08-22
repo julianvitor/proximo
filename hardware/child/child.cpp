@@ -67,6 +67,7 @@ void releaseMachineIfAvaliable(const JsonObject& JSON_RECEIVED_MESSAGE);
 void accioMachineResponse(const JsonObject& JSON_OBJ);
 void ativarRele();
 void enviarInsertedJson(const String& UID_INSERTED);
+String lerRfid();
 // Instanciar sensor
 PN532_I2C pn532_i2c(Wire);
 PN532 nfc(pn532_i2c);
@@ -244,6 +245,30 @@ void testarReles() {
   digitalWrite(RELE1_PIN, HIGH);
 }
 
+String lerRfid(){
+  //obter rfid conectado
+  // Verifica se há um cartão RFID
+  String uid_string;
+  uint8_t success;
+  uint8_t uid[7] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer para armazenar o UID lido
+  uint8_t uidLength;                        // Comprimento do UID (4 ou 7 bytes dependendo do tipo de cartão)
+  
+  // Tenta ler um cartão RFID
+  success = nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength, 100);
+  
+  // Se um cartão foi encontrado, converte o UID para uma string
+  if (success) {
+    uid_string = "";
+    for (uint8_t i = 0; i < uidLength; i++) {
+      if (uid[i] < 0x10) {  // quando um número é menor que 16 hexadecimal
+        uid_string += "0"; // adiciona um zero à esquerda  garantir que todos tenham dois dígitos. ex: A -> 0A hexadecimal
+      }
+      uid_string += String(uid[i], HEX);
+    }
+  }
+  return uid_string;
+}
+
 String obterEnderecoMAC() {
   String macString = ETH.macAddress();
   return macString;
@@ -288,40 +313,11 @@ void enviarRemovedJson(const String& UID_REMOVED) {
 
 void accioMachineResponse(const JsonObject& JSON_OBJ) {
   StaticJsonDocument<256> responseJson;
-  String uid_conectado = "";
   String responseString;
-  String lower_uid_conectado = "";
   String requestId = String(random(10000000, 99999999));
+  String uid_conectado = lerRfid();
 
-  // Obter RFID conectado
-  uint8_t success;
-  uint8_t uid[7] = {0, 0, 0, 0, 0, 0, 0};  // Buffer para armazenar o UID lido
-  uint8_t uidLength;                       // Comprimento do UID (4 ou 7 bytes, dependendo do tipo de cartão)
-  
-  // Tenta ler um cartão RFID
-  success = nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength, 150);
-  
-  // Se um cartão foi encontrado, converte o UID para uma string
-  if (success) {
-    for (uint8_t i = 0; i < uidLength; i++) {
-      if (uid[i] < 0x10) {  // Quando um número é menor que 16 em hexadecimal
-        uid_conectado += "0"; // Adiciona um zero à esquerda para garantir que todos tenham dois dígitos. Ex: A -> 0A em hexadecimal
-      }
-      uid_conectado += String(uid[i], HEX);
-    }
-  }
-
-  // Verifica se o UID foi lido e converte para minúsculas
-  if (uid_conectado.isEmpty()) {
-    lower_uid_conectado = "empty";
-  } 
-  else {
-    for (int i = 0; i < uid_conectado.length(); i++) {
-      lower_uid_conectado += tolower(uid_conectado[i]);  // Adiciona cada caractere minúsculo à string
-    }
-  }
-
-  responseJson["accio_machine_response"]["rfid"] = lower_uid_conectado; 
+  responseJson["accio_machine_response"]["rfid"] = uid_conectado; 
   responseJson["accio_machine_response"]["childId"] = obterEnderecoMAC(); 
   responseJson["requestId"] = requestId;
 
@@ -344,25 +340,7 @@ void logResponse() {
     response_firmware_version_data = String(firmware_version_data);
   } 
 
-  //obter rfid conectado
-  // Verifica se há um cartão RFID
-  uint8_t success;
-  uint8_t uid[7] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer para armazenar o UID lido
-  uint8_t uidLength;                        // Comprimento do UID (4 ou 7 bytes dependendo do tipo de cartão)
-  
-  // Tenta ler um cartão RFID
-  success = nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength, 100);
-  
-  // Se um cartão foi encontrado, converte o UID para uma string
-  if (success) {
-    uid_conectado = "";
-    for (uint8_t i = 0; i < uidLength; i++) {
-      if (uid[i] < 0x10) {  // quando um número é menor que 16 hexadecimal
-        uid_conectado += "0"; // adiciona um zero à esquerda  garantir que todos tenham dois dígitos. ex: A -> 0A hexadecimal
-      }
-      uid_conectado += String(uid[i], HEX);
-    }
-  }
+  uid_conectado = lerRfid();
 
   to_send_json["response_log"]["device_info"]["mac_address"] = macAddress;
   to_send_json["response_log"]["device_info"]["ip_address"] = ipAddress;
@@ -385,16 +363,18 @@ void logResponse() {
 
 void releaseMachineIfAvaliable(const JsonObject& JSON_RECEIVED_MESSAGE){
   // se o rfid presente for o mesmo da mensagem. libera a maquina.
-
   if (JSON_RECEIVED_MESSAGE.containsKey("rfid")) {
-      String rfid_requested = JSON_RECEIVED_MESSAGE["rfid"].as<String>(); // Obtém o valor associado à chave "rfid"
-      
-      if (rfid_requested == global_uid_atual) {
-        ativarRele(); // Chama a função ativar_rele() se o valor for igual ao UID_ATUAL
+    String rfid_requested = JSON_RECEIVED_MESSAGE["rfid"].as<String>(); // Obtém o valor associado à chave "rfid"
+    if(!rfid_requested.isEmpty()){ 
+      String uid_atual;
+      uid_atual = lerRfid();     
+      if (rfid_requested == uid_atual) {
+        ativarRele(); 
         //playSound()
         //ENVIAR RESPOSTA de acionamento da maquina
       }
     }
+  }
 }
 
 void setup() {
