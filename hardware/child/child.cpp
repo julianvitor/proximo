@@ -101,48 +101,53 @@ void WiFiEvent(WiFiEvent_t event) {
   }
 }
 // Função que trata os eventos do WebSocket
-void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
-    switch(type) {
-      case WStype_TEXT:
-        // Verifica se o payload começa com '{', indicando que é um JSON
-        if (payload[0] == '{') {
-          String mensagemRecebida = String((char*)payload).substring(0, length);
-          StaticJsonDocument<512> jsonDoc;
-          DeserializationError error = deserializeJson(jsonDoc, mensagemRecebida);
-          if (!error) {
-            // Verificar se o campo "accio_machine" existe exatamente no JSON recebido
-            if (jsonDoc.containsKey("accio_machine") && !jsonDoc.containsKey("accio_machine_response")) {
-              
-            }
-          } else {
-            webSocket.sendTXT("Erro: JSON inválido recebido.");
-          }
-        } else {
+void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
+    switch (type) {
+        case WStype_TEXT:
+          // Handle JSON
+          if (payload[0] == '{') {
+              String mensagemRecebida = String((char*)payload).substring(0, length);
+              StaticJsonDocument<512> jsonDoc;
+              DeserializationError error = deserializeJson(jsonDoc, mensagemRecebida);
 
-          if (strcmp((char*)payload, "activate all") == 0) {
-            ativarRele();
-            ativarRele2();
+              if (!error) { // Verifica se a desserialização foi bem-sucedida
+                  // accio_machine
+                  if (jsonDoc.containsKey("accio_machine") && !jsonDoc.containsKey("accio_machine_response")) {
+                      accioMachineResponse();
+                  }
+                  // Aqui trata outros JSONs
+              } 
+              else {
+                  webSocket.sendTXT("Erro: JSON inválido recebido.");
+              }
           } 
-          else if (strcmp((char*)payload, "firmware") == 0) {
-            uint32_t versiondata = nfc.getFirmwareVersion(); 
-            if (versiondata) {
-              String firmware = "PN532 Firmware: ";
-              firmware += String(versiondata);
-              webSocket.sendTXT(firmware); 
-            } 
-            else {
-              webSocket.sendTXT("Erro: PN532 não encontrado"); 
-            }
+          else {
+              if (strcmp((char*)payload, "activate all") == 0) {
+                  ativarRele();
+                  ativarRele2();
+              } 
+              else if (strcmp((char*)payload, "firmware") == 0) {
+                  uint32_t versiondata = nfc.getFirmwareVersion(); 
+                  if (versiondata) {
+                      String firmware = "PN532 Firmware: ";
+                      firmware += String(versiondata);
+                      webSocket.sendTXT(firmware); 
+                  } 
+                  else {
+                      webSocket.sendTXT("Erro: PN532 não encontrado"); 
+                  }
+              } 
+              else if (strcmp((char*)payload, "log") == 0) {
+                  LogResponse();
+              }
           }
-          else if (strcmp((char*)payload, "log") == 0) {
-            LogResponse();
-          }
-        }
-        break;
+          break;
+
       default:
-        break;
+          break;
     }
 }
+
 
 void gerenciar_erros_callback(){
   if (!ethernet_conexao) {
@@ -289,20 +294,30 @@ void enviarRemovedJson(const String& UID_REMOVED) {
 }
 
 void accioMachineResponse(const String& UID_ATUAL){
-StaticJsonDocument<256> responseJson;
+  StaticJsonDocument<256> responseJson;
 
-String requestId = String(random(10000000, 99999999));
+  if (UID_ATUAL.isEmpty()) {
+    UID_ATUAL = "empty";
+  }
+  else{
+    for (int i = 0; i < UID_ATUAL.length(); i++) {
+      UID_ATUAL[i] = tolower(UID_ATUAL[i]);
+    }
+  }
 
-responseJson["accio_machine_response"]["rfid"] = UID_ATUAL; 
-responseJson["accio_machine_response"]["childId"] = obterEnderecoMAC(); 
-responseJson["requestId"] = requestId;
+  String requestId = String(random(10000000, 99999999));
 
-String respostaString;
+  responseJson["accio_machine_response"]["rfid"] = UID_ATUAL; 
+  responseJson["accio_machine_response"]["childId"] = obterEnderecoMAC(); 
+  responseJson["requestId"] = requestId;
 
-serializeJson(responseJson, respostaString);
+  String respostaString;
 
-webSocket.sendTXT(respostaString);
+  serializeJson(responseJson, respostaString);
+
+  webSocket.sendTXT(respostaString);
 }
+
 void LogResponse() {
   // Criar o objeto JSON
   StaticJsonDocument<1024> jsonDoc;

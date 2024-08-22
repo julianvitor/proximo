@@ -1,16 +1,16 @@
 # Documentação para Envio de Informações sobre RFID
 
-### Inserido
+### removido
 
 A resposta do filho deve ser no seguinte formato:
 
 ```json
 {
-  "inserted": {
-    "rfid": "041A2B3C4D5E6F",
+  "removed": {
+    "rfid": "041a2b3c4d5e6f",
     "station_mac": "AA:BB:CC:DD:EE:FF"
   },
-  "requestId": "12345678"
+  "message_id": "12345678"
 }
 
 ```
@@ -18,16 +18,15 @@ A resposta do filho deve ser no seguinte formato:
 
 ### Descrição dos Campos
 
-- **report** (objeto): O objeto principal que contém as informações do evento.
-- **inserted** (objeto): Contém dados específicos da operação realizada
-- **rfid**(string): Identificador RFID da máquina.
+- **removed** (objeto): Contém dados específicos da operação realizada
+- **rfid**(string): Identificador RFID da máquina sempre em lowercase e sem dois pontos.
 - **station_mac**(string):  Endereço MAC da estação(filho).
-- **requestId** (string): Identificador único para a confirmação da solicitação.
+- **message_id** (string): Identificador único para a confirmação da solicitação.
 
 
 ## Erros Comuns e Tratamento
 
-- **Campo faltando**: se qualquer campo com exceção de requestID que é usado para confirmação estiver faltando a operação será ignorada.
+- **Campo faltando**: se qualquer campo com exceção de message_id que é usado para confirmação estiver faltando a operação será ignorada.
 - **Formato incorreto**: Se o UID não estiver no formato recomendado ou se o prefixo estiver incorreto, o aplicativo pode falhar ao tentar processar a mensagem.
 - **Tratamento**: Em caso de erro, o aplicativo ignorará a mensagem malformada e, se necessário, exibirá uma mensagem de erro no Logcat
 

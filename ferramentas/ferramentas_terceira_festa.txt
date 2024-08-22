@@ -1,0 +1,1 @@
+websocat (servidor websocket para ouvir respostas WT32)

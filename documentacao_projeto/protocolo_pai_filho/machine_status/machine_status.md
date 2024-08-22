@@ -5,7 +5,7 @@ A requisição do pai deve ser no seguinte formato:
 ```json
 {
     "accio_machine": {},
-    "requestId": "12345678"  // ID para confirmação
+    "message_id": "12345678"  // ID para confirmação
 }
 
 ```
@@ -15,10 +15,10 @@ A resposta do filho deve ser no seguinte formato:
 ```json
 {
     "accio_machine_response": {
-        "rfid": "12345678910",
-        "childId": "CA:FE:CA:FE:CA:FE"
+        "rfid": "041a2b3c4d5e6f",
+        "station_mac": "cafecafecafe"
     },
-    "requestId": "12345678"
+    "message_id": "12345678"
 }
 ```
 
@@ -27,23 +27,23 @@ Mais exemplos:
 ```json
 {
     "accio_machine_response": {
-        "rfid": "9876543210",
-        "childId": "CA:CA:CA:CA:CA:CA"
+        "rfid": "041a2b3c4d5e6f",
+        "station_mac": "cafecafecafe"
     },
-    "requestId": "87654321"
+    "message_id": "87654321"
 }
 ```
 
 ### Request
 
 - **accio_machine** (objeto):  Objeto principal para a solicitação. Este campo deve ser vazio.
-- **requestId** (string): Identificador único para a confirmação da solicitação.
+- **message_id** (string): Identificador único para a confirmação da solicitação.
 
 #### Response 
 - **accio_machine_response** (objeto): Objeto principal da resposta.
-- **rfid** (string): UID de RFID do dispositivo.
-- **childId** (string): Identificador único associado ao filho.
-- **requestId** (string): Identificador único para a confirmação da solicitação.
+- **rfid** (string): UID de RFID do dispositivo sempre em lowercase e sem dois pontos.
+- **station_mac** (string): Identificador único associado ao filho.
+- **message_id** (string): Identificador único para a confirmação da solicitação.
 
 ### Erros Comuns e Tratamento
 
@@ -57,4 +57,4 @@ Mais exemplos:
 **R:** Campos adicionais serão ignorados pelo aplicativo, mas evite para melhor performance e entendimento do codigo.
 
 **P:** Posso omitir campos opcionais?
-**R:** Sim, campos opcionais podem ser omitidos, mas os campos requestId, childId e rfid devem estar presentes.
+**R:** Sim, campos opcionais podem ser omitidos, mas os campos message_id, station_mac e rfid devem estar presentes.

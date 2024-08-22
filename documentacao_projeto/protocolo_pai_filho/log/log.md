@@ -5,7 +5,7 @@ A quequisição do pai deve ser no seguinte formato:
 ```json
 {
     "accio_log": {},
-    "requestId": "12345678"  // ID para confirmação
+    "message_id": "12345678"  // ID para confirmação
 }
 
 ```
@@ -15,21 +15,21 @@ A resposta do filho deve ser no seguinte formato:
 ```json
 {
     "response_log": {
-        "timestamp": "2024-08-10T14:32:00Z",  // ISO 8601 format
-        "deviceInfo": {
-            "macAddress": "00:1A:2B:3C:4D:5E", // String no formato XX:XX:XX:XX:XX:XX
-            "ipAddress": "192.168.1.10"        // Endereço IP em formato IPv4
+        "time_stamp": "2024-08-10T14:32:00Z",  // ISO 8601 format
+        "device_info": {
+            "station_mac": "00:1A:2B:3C:4D:5E", // String no formato XX:XX:XX:XX:XX:XX
+            "ip_address": "192.168.1.10"        // Endereço IP em formato IPv4
         },
-        "systemStatus": {
-            "coreTemperature": 65.3,           // Temperatura do núcleo em graus Celsius (float)
+        "system_status": {
+            "core_temperature": 65.3,           // Temperatura do núcleo em graus Celsius (float)
             "uptime": "3 days 14 hours 32 minutes" // Tempo de atividade (string)
         },
-        "pn532Firmware": {
+        "pn532_firmware": {
             "version": "1.6.8",                // Versão do firmware (string)
             "status": "OK"                     // Status do firmware (string)
         }
     },
-    "requestId": "12345678"// ID para confirmação
+    "message_id": "12345678"// ID para confirmação
 }
 
 ```
@@ -39,17 +39,17 @@ A resposta do filho deve ser no seguinte formato:
 ### Descrição dos Campos
 
 - **log** (objeto): O objeto principal contendo os dados do log.
-    - **timestamp** (string): A data e hora em que o log foi criado, no formato ISO 8601.
-    - **deviceInfo** (objeto): Informações sobre o dispositivo que enviou o log.
-        - **macAddress** (string): Endereço MAC do dispositivo, no formato XX:XX:XX:XX:XX:XX.
-        - **ipAddress** (string): Endereço IP do dispositivo em formato IPv4.
-    - **systemStatus** (objeto): Status atual do sistema.
-        - **coreTemperature** (float): Temperatura do núcleo em graus Celsius.
+    - **times_tamp** (string): A data e hora em que o log foi criado, no formato ISO 8601.
+    - **device_info** (objeto): Informações sobre o dispositivo que enviou o log.
+        - **station_mac** (string): Endereço MAC do dispositivo em uppercase e com dois pontos.
+        - **ip_address** (string): Endereço IP do dispositivo em formato IPv4.
+    - **system_status** (objeto): Status atual do sistema.
+        - **core_temperature** (float): Temperatura do núcleo em graus Celsius.
         - **uptime** (string): Tempo de atividade do sistema.
-    - **pn532Firmware** (objeto): Informações sobre o firmware PN532.
+    - **pn532_firmware** (objeto): Informações sobre o firmware PN532.
         - **version** (string): Versão do firmware.
         - **status** (string): Status atual do firmware (ex: "OK", "Error").
-    - **requestId** (string): Identificador único para a confirmação da solicitação.
+    - **message_id** (string): Identificador único para a confirmação da solicitação.
 
 ### Erros Comuns e Tratamento
 
