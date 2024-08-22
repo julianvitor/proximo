@@ -5,9 +5,13 @@ A requisição do pai deve ser no seguinte formato:
 ```json
 {
     "accio_machine": {},
-    "message_id": "12345678"  // ID para confirmação
+    "message_id": "12345678"
 }
 
+```
+
+```json	
+{"accio_machine":{},"message_id":"12345678"}
 ```
 
 A resposta do filho deve ser no seguinte formato:
@@ -19,18 +23,6 @@ A resposta do filho deve ser no seguinte formato:
         "station_mac": "cafecafecafe"
     },
     "message_id": "12345678"
-}
-```
-
-Mais exemplos:
-
-```json
-{
-    "accio_machine_response": {
-        "rfid": "041a2b3c4d5e6f",
-        "station_mac": "cafecafecafe"
-    },
-    "message_id": "87654321"
 }
 ```
 

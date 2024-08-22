@@ -5,8 +5,10 @@ A quequisição do pai deve ser no seguinte formato:
 ```json
 {
     "accio_log": {},
-    "message_id": "12345678"  // ID para confirmação
+    "message_id": "12345678"  
 }
+
+{"accio_log":{},"message_id": "12345678"}
 
 ```
 
@@ -15,22 +17,23 @@ A resposta do filho deve ser no seguinte formato:
 ```json
 {
     "response_log": {
-        "time_stamp": "2024-08-10T14:32:00Z",  // ISO 8601 format
         "device_info": {
-            "station_mac": "00:1A:2B:3C:4D:5E", // String no formato XX:XX:XX:XX:XX:XX
-            "ip_address": "192.168.1.10"        // Endereço IP em formato IPv4
+            "station_mac": "00:1A:2B:3C:4D:5E",
+            "ip_address": "192.168.1.10"
         },
         "system_status": {
-            "core_temperature": 65.3,           // Temperatura do núcleo em graus Celsius (float)
-            "uptime": "3 days 14 hours 32 minutes" // Tempo de atividade (string)
+            "core_temperature": 65.3,
+            "uptime": "0 days 0 hours 4 minutes"
         },
-        "pn532_firmware": {
-            "version": "1.6.8",                // Versão do firmware (string)
-            "status": "OK"                     // Status do firmware (string)
+        "pn532": {
+            "version": "1.6.8",
+            "status": "OK",
+            "rfid":"041a2b3c4d5e6f"
         }
     },
-    "message_id": "12345678"// ID para confirmação
+    "message_id": "12345678"
 }
+
 
 ```
 
