@@ -1,1 +1,2 @@
-websocat (servidor websocket para ouvir respostas WT32)
+websocat websocket server link: https://github.com/vi/websocat/releases
+websocket client: https://chromewebstore.google.com/detail/web-socket-client/lifhekgaodigcpmnakfhaaaboididbdn?pli=1
