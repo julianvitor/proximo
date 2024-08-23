@@ -16,7 +16,7 @@
 #include <PN532.h>
 #include "TickTwo.h"
 #include <Wire.h>
-#include <ArduinoJson.h> // Inclua a biblioteca ArduinoJson
+#include <ArduinoJson.h>
 #include "esp_system.h"
 
 
@@ -277,12 +277,12 @@ void enviarInsertedJson(const String& UID_INSERTED) {
   // Criar o objeto JSON
   StaticJsonDocument<256> to_send_json_doc;
 
-  String requestId = String(random(10000000, 99999999));
+  String message_id = String(random(10000000, 99999999));
   String macAddress = obterEnderecoMAC();
 
   to_send_json_doc["inserted"]["rfid"] = UID_INSERTED;
   to_send_json_doc["inserted"]["station_mac"] = macAddress;
-  to_send_json_doc["requestId"] = requestId;
+  to_send_json_doc["message_id"] = message_id;
 
   String to_send_json_string;
   serializeJson(to_send_json_doc, to_send_json_string);
@@ -293,8 +293,8 @@ void enviarRemovedJson(const String& UID_REMOVED) {
   // Criar o objeto JSON
   StaticJsonDocument<256> jsonDoc;
 
-  // Gerar um requestId aleatório
-  String requestId = String(random(10000000, 99999999));
+  // Gerar um message_id aleatório
+  String message_id = String(random(10000000, 99999999));
 
   String macAddress = obterEnderecoMAC();
 
@@ -302,7 +302,7 @@ void enviarRemovedJson(const String& UID_REMOVED) {
   jsonDoc["removed"]["rfid"] = UID_REMOVED;
   jsonDoc["removed"]["station_mac"] = macAddress;
 
-  jsonDoc["requestId"] = requestId;
+  jsonDoc["message_id"] = message_id;
   // Converter JSON para String
   String jsonString;
   serializeJson(jsonDoc, jsonString);
@@ -314,12 +314,12 @@ void enviarRemovedJson(const String& UID_REMOVED) {
 void accioMachineResponse(const JsonObject& JSON_OBJ) {
   StaticJsonDocument<256> responseJson;
   String responseString;
-  String requestId = String(random(10000000, 99999999));
+  String message_id = String(random(10000000, 99999999));
   String uid_conectado = lerRfid();
 
   responseJson["accio_machine_response"]["rfid"] = uid_conectado; 
   responseJson["accio_machine_response"]["childId"] = obterEnderecoMAC(); 
-  responseJson["requestId"] = requestId;
+  responseJson["message_id"] = message_id;
 
   serializeJson(responseJson, responseString);
   webSocket.sendTXT(responseString);
@@ -329,9 +329,9 @@ void logResponse() {
   // Criar o objeto JSON
   StaticJsonDocument<1024> to_send_json;
   String uid_conectado = "";
-  String requestId = String(random(10000000, 99999999));
+  String message_id = String(random(10000000, 99999999));
   String macAddress = obterEnderecoMAC();
-  String ipAddress = WiFi.localIP().toString();
+  String ipAddress = ETH.localIP().toString();
   String response_firmware_version_data;
   unsigned long uptime = millis() / 1000;
   float temperature = 40.0;
@@ -352,7 +352,7 @@ void logResponse() {
   to_send_json["response_log"]["pn532"]["status"] = (firmware_version_data > 0) ? "OK" : "Erro";
   to_send_json["response_log"]["pn532"]["rfid"] = uid_conectado;
 
-  to_send_json["message_id"] = requestId;
+  to_send_json["message_id"] = message_id;
   // Converter JSON para String
   String jsonString;
   serializeJson(to_send_json, jsonString);
