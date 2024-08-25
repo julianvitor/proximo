@@ -15,6 +15,7 @@ class LogAdapter(private val logList: MutableList<JSONObject>) : RecyclerView.Ad
         val coreTemperatureTextView: TextView = itemView.findViewById(R.id.coreTemperatureTextView)
         val uptimeTextView: TextView = itemView.findViewById(R.id.uptimeTextView)
         val firmwareVersionTextView: TextView = itemView.findViewById(R.id.firmwareVersionTextView)
+        val rfidTextView: TextView = itemView.findViewById(R.id.rfidTextView)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): LogViewHolder {
@@ -24,35 +25,37 @@ class LogAdapter(private val logList: MutableList<JSONObject>) : RecyclerView.Ad
 
     override fun onBindViewHolder(holder: LogViewHolder, position: Int) {
         // Obtém o objeto JSON da lista
-        val log = logList[position].optJSONObject("log") ?: return
+        val log = logList[position].optJSONObject("response_log") ?: return
 
         try {
             // Verifica e preenche informações do dispositivo
-            if (log.has("deviceInfo")) {
-                val deviceInfo = log.getJSONObject("deviceInfo")
-                holder.macAddressTextView.text = "MAC Address: ${deviceInfo.optString("macAddress", "N/A")}"
-                holder.ipAddressTextView.text = "IP Address: ${deviceInfo.optString("ipAddress", "N/A")}"
+            if (log.has("device_info")) {
+                val deviceInfo = log.getJSONObject("device_info")
+                holder.macAddressTextView.text = "MAC Address: ${deviceInfo.optString("station_mac", "N/A")}"
+                holder.ipAddressTextView.text = "IP Address: ${deviceInfo.optString("ip_address", "N/A")}"
             } else {
                 holder.macAddressTextView.text = "MAC Address: N/A"
                 holder.ipAddressTextView.text = "IP Address: N/A"
             }
 
             // Verifica e preenche o status do sistema
-            if (log.has("systemStatus")) {
-                val systemStatus = log.getJSONObject("systemStatus")
-                holder.coreTemperatureTextView.text = "Core Temperature: ${systemStatus.optDouble("coreTemperature", 0.0)} °C"
+            if (log.has("system_status")) {
+                val systemStatus = log.getJSONObject("system_status")
+                holder.coreTemperatureTextView.text = "Core Temperature: ${systemStatus.optDouble("core_temperature", 0.0)} °C"
                 holder.uptimeTextView.text = "Uptime: ${systemStatus.optString("uptime", "N/A")}"
             } else {
                 holder.coreTemperatureTextView.text = "Core Temperature: N/A"
                 holder.uptimeTextView.text = "Uptime: N/A"
             }
 
-            // Verifica e preenche a versão do firmware PN532
-            if (log.has("pn532Firmware")) {
-                val pn532 = log.getJSONObject("pn532Firmware")
+            // Verifica e preenche a versão do firmware PN532 e RFID
+            if (log.has("pn532")) {
+                val pn532 = log.getJSONObject("pn532")
                 holder.firmwareVersionTextView.text = "Pn532 Firmware Version: ${pn532.optString("version", "N/A")}"
+                holder.rfidTextView.text = "RFID: ${pn532.optString("rfid", "N/A")}"
             } else {
                 holder.firmwareVersionTextView.text = "Pn532 Firmware Version: N/A"
+                holder.rfidTextView.text = "RFID: N/A"
             }
         } catch (e: Exception) {
             // Tratar exceções que possam ocorrer ao acessar dados do JSON
@@ -63,6 +66,7 @@ class LogAdapter(private val logList: MutableList<JSONObject>) : RecyclerView.Ad
             holder.coreTemperatureTextView.text = "Core Temperature: Não informado"
             holder.uptimeTextView.text = "Uptime: Não informado"
             holder.firmwareVersionTextView.text = "Pn532 Firmware Version: Não informado"
+            holder.rfidTextView.text = "RFID: Não informado"
         }
     }
 

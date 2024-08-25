@@ -325,9 +325,9 @@ class DashboardActivity : AppCompatActivity() {
 
                     // Criar a mensagem JSON
                     val jsonMessage = JSONObject().apply {
-                        put("command", "ativar")
+                        put("command", "activate")
                         put("rfid", rfid) // Usar o RFID da máquina
-                        put("requestId", 12345678) // ID fixo ou gerado dinamicamente
+                        put("message_id", 12345678) // ID fixo ou gerado dinamicamente
                     }
 
                     // Enviar a mensagem pelo WebSocket

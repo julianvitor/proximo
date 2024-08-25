@@ -84,7 +84,7 @@ class TecActivity : AppCompatActivity() {
         val logButton: Button = findViewById(R.id.buttonGenerateLog)
         logButton.setOnClickListener {
             CoroutineScope(Dispatchers.Main).launch {
-                sendMessage("log")
+                sendMessage("""{"accio_log":{},"message_id": "12345678"}""")
 
                 // Espera 3 segundos
                 delay(3000)

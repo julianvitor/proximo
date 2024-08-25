@@ -5,12 +5,12 @@
     android:orientation="vertical"
     android:padding="8dp">
 
-
     <TextView
         android:id="@+id/macAddressTextView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="MAC Address" />
+        android:text="MAC Address"
+        android:textStyle="bold" />
 
     <TextView
         android:id="@+id/ipAddressTextView"
@@ -35,5 +35,13 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Firmware Version" />
+
+    <!-- Novo campo para exibir o RFID -->
+    <TextView
+        android:id="@+id/rfidTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="RFID"
+        android:textStyle="italic" />
 
 </LinearLayout>
