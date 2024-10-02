@@ -195,10 +195,7 @@ void desativar_rele_callback() {
     global_rele_ativo = false;
 }
 
-/*void desativar_rele2_callback() {
-    digitalWrite(RELE2_PIN, HIGH);
-    rele2Ativo = false;
-}*/
+
 
 void ativarRele() {
     digitalWrite(RELE1_PIN, LOW);
@@ -207,11 +204,6 @@ void ativarRele() {
 
 }
 
-/*void ativarRele2() {
-    digitalWrite(RELE2_PIN, LOW);
-    rele2Ativo = true;
-    timerDesativarRele2.start();
-}*/
 
 void iniciarEthernet(){
   WiFi.onEvent(WiFiEvent);
