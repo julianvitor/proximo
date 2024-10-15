@@ -73,10 +73,10 @@ PN532_I2C pn532_i2c(Wire);
 PN532 nfc(pn532_i2c);
 
 // Instanciar os timers(tasks)
-TickTwo timerLerRfid(ler_rfid_callback, 6000, 0, MILLIS);
-TickTwo timerReiniciarPn532(reiniciar_pn532_callback, 180000, 0, MILLIS);// Reinicia o PN532 a cada 180 segundos
+TickTwo timerLerRfid(ler_rfid_callback, 4000, 0, MILLIS);
+TickTwo timerReiniciarPn532(reiniciar_pn532_callback, 2000, 0, MILLIS);// Reinicia o PN532 a cada 180 segundos
 TickTwo timerAtivarRsto([]() { iniciarPn532_callback(I2C_SDA, I2C_SCL); }, 100, 1, MILLIS);// Necessario uso de função lambda para passar como parametro
-TickTwo timerGerenciarErros(gerenciar_erros_callback, 2000, 0, MILLIS);
+TickTwo timerGerenciarErros(gerenciar_erros_callback, 1000, 0, MILLIS);
 TickTwo timerDesativarRele1(desativar_rele_callback, DURACAO_RELE, 1, MILLIS);
 //TickTwo timerDesativarRele2(desativar_rele2_callback, DURACAO_RELE, 1, MILLIS);
 
@@ -154,6 +154,7 @@ void reiniciar_pn532_callback(){
   digitalWrite(PN532_RESET_PIN, LOW);// pn532 entra em modo suspensão
   global_rsto_ativo = false;
   timerAtivarRsto.start();// Inicia e configura o pn532 no tempo determinado
+  iniciarPn532_callback(I2C_SDA, I2C_SCL);
 
 }
 
@@ -191,19 +192,16 @@ void ler_rfid_callback() {
   }
 }
 void desativar_rele_callback() {
-    digitalWrite(RELE1_PIN, HIGH);
+    digitalWrite(RELE1_PIN, LOW);
     global_rele_ativo = false;
 }
 
-
-
 void ativarRele() {
-    digitalWrite(RELE1_PIN, LOW);
+    digitalWrite(RELE1_PIN, HIGH);
     global_rele_ativo = true;
     timerDesativarRele1.start();
 
 }
-
 
 void iniciarEthernet(){
   WiFi.onEvent(WiFiEvent);
@@ -230,11 +228,14 @@ void inicializarGPIOS() {
 }
 
 void testarReles() {
-  digitalWrite(RELE1_PIN, LOW);
-  //digitalWrite(RELE2_PIN, LOW);
-  delay(1000);
-  //digitalWrite(RELE2_PIN, HIGH);
   digitalWrite(RELE1_PIN, HIGH);
+  delay(2000);
+  digitalWrite(RELE1_PIN, LOW);
+  delay(2000);
+  digitalWrite(RELE1_PIN, HIGH);
+  delay(2000);
+  digitalWrite(RELE1_PIN, LOW);
+
 }
 
 String lerRfid(){
@@ -383,7 +384,7 @@ void setup() {
   timerLerRfid.start();
   timerGerenciarErros.start();
   timerReiniciarPn532.start();
-  webSocket.setReconnectInterval(500);
+  webSocket.setReconnectInterval(50);
 }
 
 void loop() {
@@ -391,7 +392,6 @@ void loop() {
   timerGerenciarErros.update();
   timerLerRfid.update();
   timerDesativarRele1.update();
-  //timerDesativarRele2.update();
   timerReiniciarPn532.update();
   timerAtivarRsto.update();
 
