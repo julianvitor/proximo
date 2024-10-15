@@ -26,6 +26,7 @@ const int RELE1_PIN = 2; // Pino digital conectado ao primeiro relé
 const int I2C_SCL = 32;  // Pino i2c clock RFID
 const int I2C_SDA = 33;  // Pino i2c data RFID
 const int PN532_RESET_PIN = 15;   // Reset pin RFID
+const int BUZZER_PIN = 14;
 
 // Ethernet
 /* 
@@ -49,7 +50,10 @@ bool global_rele_ativo = false;
 //bool rele2Ativo = false;
 bool global_rsto_ativo = false;
 
+bool global_tone_ativo = false;
+
 int DURACAO_RELE = 28000;// Duração do rele ativado em milissegundos
+int INTERVALO_ATIVAR_TONE = 2000;
 
 // Variaveis globais
 String global_uid_anterior;
@@ -61,6 +65,8 @@ void gerenciar_erros_callback();
 void ler_rfid_callback();
 void desativar_rele_callback();
 void reiniciar_pn532_callback();
+void ativar_tone_callback();
+void desativar_tone_callback();
 void iniciarPn532_callback(int I2C_SDA, int I2C_SCL);// Iniciar o rsto, instanciar o PN532 e inicia a comunicacao em modo leitura
 void logResponse();
 void releaseMachineIfAvaliable(const JsonObject& JSON_RECEIVED_MESSAGE);
@@ -78,7 +84,7 @@ TickTwo timerReiniciarPn532(reiniciar_pn532_callback, 2000, 0, MILLIS);// Reinic
 TickTwo timerAtivarRsto([]() { iniciarPn532_callback(I2C_SDA, I2C_SCL); }, 100, 1, MILLIS);// Necessario uso de função lambda para passar como parametro
 TickTwo timerGerenciarErros(gerenciar_erros_callback, 1000, 0, MILLIS);
 TickTwo timerDesativarRele1(desativar_rele_callback, DURACAO_RELE, 1, MILLIS);
-//TickTwo timerDesativarRele2(desativar_rele2_callback, DURACAO_RELE, 1, MILLIS);
+
 
 
 void WiFiEvent(WiFiEvent_t event) {
@@ -142,6 +148,15 @@ void webSocketEvent(WStype_t type, uint8_t* payload, size_t length) {
   }
 }
 
+void ativar_tone(){
+  tone(BUZZER_PIN, 880);
+  global_tone_ativo = true;
+}
+void desativar_tone(){
+  noTone(BUZZER_PIN);
+  global_tone_ativo = false;
+}
+
 void gerenciar_erros_callback(){
   if (!global_ethernet_conexao) {
     // Se não estiver conectado, tenta inicializar a conexão Ethernet novamente
@@ -194,13 +209,14 @@ void ler_rfid_callback() {
 void desativar_rele_callback() {
     digitalWrite(RELE1_PIN, LOW);
     global_rele_ativo = false;
+    desativar_tone();
 }
 
 void ativarRele() {
     digitalWrite(RELE1_PIN, HIGH);
     global_rele_ativo = true;
     timerDesativarRele1.start();
-
+    ativar_tone();
 }
 
 void iniciarEthernet(){
