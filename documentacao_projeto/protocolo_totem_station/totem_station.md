@@ -1,10 +1,13 @@
 # Comm protocol for totem <--> station
 
 ## Activate all relays from all stations
+Totem command should contains the following:
+
 ```json
 {"command": "activate_all"}
 ```
 ## Activate relay based on present rfid
+Totem command should contains the following:
 ```json
 {
     "command": "activate",
@@ -15,7 +18,6 @@
 ***
 
 ## Insertion
-
 Station response should contains the following:
 
 ```json
@@ -100,6 +102,7 @@ Station response should contains the following:
     - **pn532_firmware** (objeto): Informações sobre o firmware PN532.
         - **version** (string): Versão do firmware.
         - **status** (string): Status atual do firmware (ex: "OK", "Error").
+        - **rfid** (string): Actual rfid uid present at sensor, lowercase characters.
     - **message_id** (string): Identificador único para a confirmação da solicitação.
 
 ### Erros Comuns e Tratamento
@@ -186,7 +189,7 @@ A resposta do filho deve ser no seguinte formato:
 {
   "removed": {
     "rfid": "041a2b3c4d5e6f",
-    "station_mac": "AA:BB:CC:DD:EE:FF"
+    "station_mac": "cafecafecafe"
   },
   "message_id": "12345678"
 }

@@ -20,7 +20,8 @@
             android:id="@+id/editTextEmail"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="text"/>
+            android:inputType="text"
+            android:textSize="30sp" />
 
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -28,7 +29,7 @@
         android:id="@+id/textInputLayoutPassword"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="PIN"
+        android:hint="Senha"
         app:boxCornerRadiusBottomEnd="15dp"
         app:boxCornerRadiusBottomStart="15dp"
         app:boxCornerRadiusTopEnd="15dp"
@@ -38,7 +39,8 @@
             android:id="@+id/editTextPassword"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="textPassword"/>
+            android:inputType="textPassword"
+            android:textSize="30sp" />
 
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -47,10 +49,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Entrar"
+        android:textSize="40sp"
         android:background="@drawable/button_submit"
         android:layout_marginTop="16dp"
-        app:backgroundTint="@color/button_background_color"
-        />
-
+        app:backgroundTint="@color/button_background_color" />
 
 </LinearLayout>

@@ -15,7 +15,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Àrea tecnica"
-            android:textSize="24sp"
+            android:textSize="20sp"
             android:textStyle="bold"
             android:gravity="center_horizontal" />
 
@@ -29,7 +29,19 @@
             android:background="@drawable/button_submit"
             android:layout_marginTop="20dp"
             app:backgroundTint="@color/button_background_color"
-            android:textSize="18sp" />
+            android:textSize="20sp" />
+
+        <!--botão abrir travas -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonOpenLock"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Abrir todas as traVAS"
+            android:layout_gravity="center_horizontal"
+            android:background="@drawable/button_submit"
+            android:layout_marginTop="20dp"
+            app:backgroundTint="#FF3B30"
+            android:textSize="20sp" />
 
         <!--log RecyclerView-->
         <androidx.recyclerview.widget.RecyclerView
@@ -48,7 +60,7 @@
             android:background="@drawable/button_submit"
             android:layout_marginTop="20dp"
             app:backgroundTint="@color/button_background_color"
-            android:textSize="18sp" />
+            android:textSize="20sp" />
 
         <!--botão voltar -->
         <com.google.android.material.button.MaterialButton
@@ -58,7 +70,9 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="5dp"
             android:background="@drawable/button_back"
-            app:backgroundTint="@color/button_back_background_color" />
+            app:backgroundTint="@color/button_back_background_color"
+            android:textSize="20sp"
+            />
 
     </LinearLayout>
 </ScrollView>

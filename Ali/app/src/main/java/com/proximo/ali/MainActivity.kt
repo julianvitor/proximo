@@ -69,11 +69,11 @@ class MainActivity : AppCompatActivity() {
             // Verificar se o email e a pin estão vazios
             if (email.isNotEmpty() && pin.isNotEmpty()) {
                 // Verificar se as credenciais são de administrador
-                if (email == "admin" && pin == "admin") {
+                if (email == "0001" && pin == "8659") {
                     val intentAdmin = Intent(this, AdminActivity::class.java)
                     startActivity(intentAdmin)
                 }
-                else if(email == "tec" && pin == "tec"){
+                else if(email == "0000" && pin == "8659"){
                     val intentTec = Intent(this, TecActivity::class.java)
                     startActivity(intentTec)
                 }
@@ -82,7 +82,7 @@ class MainActivity : AppCompatActivity() {
                     // Verificar as credenciais no banco de dados
                     val isValidCredentials = dbHelper.verificarCredenciais(email, pin)
                     // Adicionar o log com as credenciais
-                    Log.d("LoginCredentials", "Email: $email, PIN: $pin")
+                    Log.d("LoginCredentials", "Email: $email, Senha: $pin")
 
                     if (isValidCredentials) {
                         // Passar o nome de email para a próxima atividade
@@ -92,7 +92,7 @@ class MainActivity : AppCompatActivity() {
 
                     } else {
                         // Se as credenciais forem inválidas, exibir uma mensagem de erro
-                        Toast.makeText(this, "E-mail ou PIN inválidos", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "E-mail ou Senha inválidos", Toast.LENGTH_SHORT).show()
                     }
                 }
             } else {

@@ -86,10 +86,18 @@ class TecActivity : AppCompatActivity() {
             CoroutineScope(Dispatchers.Main).launch {
                 sendMessage("""{"accio_log":{},"message_id": "12345678"}""")
 
-                // Espera 3 segundos
-                delay(3000)
+                // Espera ate os logs chegarem para carregar
+                delay(5000)
 
                 loadLogData()
+            }
+        }
+
+        val buttonOpenLock: Button = findViewById(R.id.buttonOpenLock)
+        buttonOpenLock.setOnClickListener{
+            CoroutineScope(Dispatchers.Main).launch {
+                sendMessage("""{"command": "activate_all"}""")
+                showToast("Solicitando abertura das travas")
             }
         }
 

@@ -72,15 +72,11 @@ class DashboardActivity : AppCompatActivity() {
         dbHelper = DatabaseHelper(this)
         countdownTextView = findViewById(R.id.countdownTextView)
 
-        requisitarMaquinas()
-        CoroutineScope(Dispatchers.Main).launch {
-            delay(2000)
-            requisitarMaquinas()
-        }
 
         // Adiciona um delay antes de chamar outras funções
         CoroutineScope(Dispatchers.Main).launch {
-            delay(8000)
+            requisitarMaquinas()
+            delay(10000)
             createAvailableMachinesJson(this@DashboardActivity) // Mescla e carrega as máquinas
             setupUI()
             startGeneralCountdown(countdownGeral)
@@ -88,8 +84,6 @@ class DashboardActivity : AppCompatActivity() {
             displayMachinesAsCards()
         }
     }
-
-
 
 
     override fun onResume() {
