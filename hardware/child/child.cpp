@@ -200,7 +200,8 @@ void ler_rfid_callback() {
   // Se não foi encontrado um cartão RFID, verifica se o ultimo UID lido foi diferente de vazio
   else {
     if (global_uid_anterior!= "") {
-      enviarRemovedJson(global_uid_anterior); 
+      enviarRemovedJson(global_uid_anterior);
+      desativar_rele_callback(); 
       global_uid_anterior = "";
       
     }
