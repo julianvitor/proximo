@@ -3,6 +3,7 @@ package com.proximo.ali
 import android.annotation.SuppressLint
 import android.app.*
 import android.content.Context
+import java.util.Properties
 import android.content.Intent
 import android.os.*
 import android.widget.Toast
@@ -87,8 +88,16 @@ class SyncService : Service() {
         }
     }
 
+    fun getApiUrl(context: Context): String {
+        val properties = Properties()
+        context.assets.open("config.properties").use { inputStream ->
+            properties.load(inputStream)
+        }
+        return properties.getProperty("api_url")
+    }
+
     private fun syncGeral(context: Context) {
-        val url = "https://uzmjrszlcg.execute-api.us-east-1.amazonaws.com/express-sync"
+        val url = getApiUrl(context);
 
         val jsonBody = "{}".trimIndent()
 
