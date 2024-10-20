@@ -88,7 +88,7 @@ class SyncService : Service() {
     }
 
     private fun syncGeral(context: Context) {
-        val url = BuildConfig.USER_SYNC_API_ENDPOINT
+        val url = "https://uzmjrszlcg.execute-api.us-east-1.amazonaws.com/express-sync"
 
         val jsonBody = "{}".trimIndent()
 

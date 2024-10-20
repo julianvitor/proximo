@@ -44,7 +44,7 @@ class DashboardActivity : AppCompatActivity() {
             webSocketService = binder.getService()
             isBound = true
             Log.d("DashboardActivity", "Serviço WebSocket vinculado com sucesso")
-            webSocketService?.setCurrentEmail(apelido ?: "")
+            webSocketService?.setCurrentCpf(apelido ?: "")
         }
 
         override fun onServiceDisconnected(arg0: ComponentName) {
@@ -68,7 +68,7 @@ class DashboardActivity : AppCompatActivity() {
         setContentView(R.layout.activity_dashboard)
 
 
-        apelido = intent.getStringExtra("apelidoUsuario")
+        apelido = intent.getStringExtra("cpfUsuario")
         dbHelper = DatabaseHelper(this)
         countdownTextView = findViewById(R.id.countdownTextView)
 
@@ -158,7 +158,7 @@ class DashboardActivity : AppCompatActivity() {
                 countdownTextView.text = "Tempo restante: $currentCountdown segundos"
                 if (currentCountdown == 0) {
                     if (isBound) {
-                        webSocketService?.setCurrentEmailIndefinido()
+                        webSocketService?.setCurrentCpfIndefinido()
                     }
                     finish()
                     return

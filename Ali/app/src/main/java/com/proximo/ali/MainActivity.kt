@@ -16,7 +16,7 @@ import android.util.Log
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var editTextEmail: EditText
+    private lateinit var editTextCpf: EditText
     private lateinit var editTextPassword: EditText
     private lateinit var buttonLogin: Button
     private lateinit var buttonRegister: Button
@@ -41,7 +41,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         // Inicializar as views
-        editTextEmail = findViewById(R.id.editTextEmail)
+        editTextCpf = findViewById(R.id.editTextCpf)
         editTextPassword = findViewById(R.id.editTextPassword)
         buttonLogin = findViewById(R.id.buttonLogin)
         dbHelper = DatabaseHelper(this)
@@ -59,49 +59,47 @@ class MainActivity : AppCompatActivity() {
 
         // Configurar OnClickListener para o botão Login
         buttonLogin.setOnClickListener {
-            val email = editTextEmail.text.toString()
+            val userCpf = editTextCpf.text.toString()
             val pin = editTextPassword.text.toString()
 
-            // Limpar os campos de email e pin
-            editTextEmail.text.clear()
+            // Limpar os campos de cpf e pin
+            editTextCpf.text.clear()
             editTextPassword.text.clear()
 
-            // Verificar se o email e a pin estão vazios
-            if (email.isNotEmpty() && pin.isNotEmpty()) {
+            // Verificar se o CPF e a pin estão vazios
+            if (userCpf.isNotEmpty() && pin.isNotEmpty()) {
                 // Verificar se as credenciais são de administrador
-                if (email == "0001" && pin == "8659") {
+                if (userCpf == "0001" && pin == "8659") {
                     val intentAdmin = Intent(this, AdminActivity::class.java)
                     startActivity(intentAdmin)
                 }
-                else if(email == "0000" && pin == "8659"){
+                else if(userCpf == "0000" && pin == "8659"){
                     val intentTec = Intent(this, TecActivity::class.java)
                     startActivity(intentTec)
                 }
 
                 else {
                     // Verificar as credenciais no banco de dados
-                    val isValidCredentials = dbHelper.verificarCredenciais(email, pin)
+                    val isValidCredentials = dbHelper.verificarCredenciais(userCpf, pin)
                     // Adicionar o log com as credenciais
-                    Log.d("LoginCredentials", "Email: $email, Senha: $pin")
+                    Log.d("LoginCredentials", "Cpf: $userCpf, Senha: $pin")
 
                     if (isValidCredentials) {
-                        // Passar o nome de email para a próxima atividade
+                        // Passar o CPF para a próxima atividade
                         val intent = Intent(this, DashboardActivity::class.java)
-                        intent.putExtra("emailUsuario", email) // Passando o nome de email como extra
+                        intent.putExtra("cpfUsuario", userCpf) // Extra sem uso (?)
                         startActivity(intent)
 
                     } else {
                         // Se as credenciais forem inválidas, exibir uma mensagem de erro
-                        Toast.makeText(this, "E-mail ou Senha inválidos", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "CPF ou Senha inválidos", Toast.LENGTH_SHORT).show()
                     }
                 }
             } else {
-                // Se o email ou a pin estiverem vazios, exibir uma mensagem de erro
+                // Se o CPF ou a pin estiverem vazios, exibir uma mensagem de erro
                 Toast.makeText(this, "Por favor, preencha todos os campos", Toast.LENGTH_SHORT).show()
             }
         }
-
-
     }
 
     override fun onStart() {

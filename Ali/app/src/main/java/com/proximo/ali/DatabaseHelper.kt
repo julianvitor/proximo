@@ -126,8 +126,8 @@ class DatabaseHelper(context: Context) {
         }
     }
 
-    fun verificarCredenciais(email: String, pin: String): Boolean {
-        Log.d("DatabaseHelper", "Verificando credenciais para o email: $email")
+    fun verificarCredenciais(cpf: String, pin: String): Boolean {
+        Log.d("DatabaseHelper", "Verificando credenciais para o CPF: $cpf")
 
         // Carregar JSON do arquivo
         val usuariosJson = loadJsonFromFile(usersFileName)
@@ -144,18 +144,18 @@ class DatabaseHelper(context: Context) {
         for (i in 0 until usuariosArray.length()) {
             val usuario = usuariosArray.optJSONObject(i)
             if (usuario != null) {
-                val userEmail = usuario.optString("email", "")
+                val userCpf = usuario.optString("cpf", "")
                 val userPin = usuario.optString("pin", "")
 
-                // Verificar se o email e o pin correspondem
-                if (userEmail == email && userPin == pin) {
-                    Log.d("DatabaseHelper", "Credenciais válidas para o email: $email")
+                // Verificar se o CPF e o pin correspondem
+                if (userCpf == cpf && userPin == pin) {
+                    Log.d("DatabaseHelper", "Credenciais válidas para o CPF: $cpf")
                     return true
                 }
             }
         }
 
-        Log.w("DatabaseHelper", "Credenciais inválidas para o email: $email")
+        Log.w("DatabaseHelper", "Credenciais inválidas para o CPF: $cpf")
         return false
     }
 
@@ -267,14 +267,14 @@ class DatabaseHelper(context: Context) {
         }
     }
 
-    fun usuarioExiste(email: String): Boolean {
+    fun usuarioExiste(cpf: String): Boolean {
         val usuariosJson = loadJsonFromFile(usersFileName)
         usuariosJson?.let {
             val usuariosArray = it.optJSONObject("attributes")?.optJSONArray("users")
             usuariosArray?.let { array ->
                 for (i in 0 until array.length()) {
                     val usuario = array.optJSONObject(i)
-                    if (usuario.optString("email") == email) {
+                    if (usuario.optString("cpf") == cpf) {
                         return true
                     }
                 }

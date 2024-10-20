@@ -24,14 +24,14 @@ class WebSocketService() : Service(), Parcelable {
     private val binder = LocalBinder()
     private val handler = Handler(Looper.getMainLooper())
     private var dbHelper: DatabaseHelper? = null
-    private var currentUserEmail: String? = null
+    private var currentUserCpf: String? = null
     private lateinit var webSocketServer: MyWebSocketServer
 
 
 
     //passar o usuario atual
     constructor(parcel: Parcel) : this() {
-        currentUserEmail = parcel.readString()
+        currentUserCpf = parcel.readString()
     }
 
     // Classe interna para a ligação do serviço
@@ -59,12 +59,12 @@ class WebSocketService() : Service(), Parcelable {
     }
 
     // Métodos para controle do usuário atual
-    fun setCurrentEmail(user: String) {
-        currentUserEmail = user
+    fun setCurrentCpf(cpf: String) {
+        currentUserCpf = cpf
     }
 
-    fun setCurrentEmailIndefinido() {
-        currentUserEmail = "indefinido"
+    fun setCurrentCpfIndefinido() {
+        currentUserCpf = "indefinido"
     }
 
     private fun startWebSocketServer() {
@@ -89,18 +89,18 @@ class WebSocketService() : Service(), Parcelable {
             message.startsWith("removido:") -> {
                 val uid = message.substringAfter(":").trim()
                 when{
-                    currentUserEmail == null -> {
+                    currentUserCpf == null -> {
                         showToast("Retirada inválida: Usuário não autenticado")
                         conn.send("Retirada inválida: Usuário não autenticado")
                     }
-                    currentUserEmail == "indefinido" -> {
+                    currentUserCpf == "indefinido" -> {
                         showToast("Retirada inválida: Usuário indefinido")
                         conn.send("Retirada inválida: Usuário indefinido")
                     }
                     else -> {
                         //dbHelper?.registrarUso(currentUserEmail!!, uid, "doca")
                         showToast("Sucesso: removido")
-                        currentUserEmail = null
+                        currentUserCpf = null
                         sendBroadcast(Intent("com.example.com.proximo.ali.ACTION_SUCCESS_REMOVIDO"))
                     }
                 }
@@ -146,18 +146,18 @@ class WebSocketService() : Service(), Parcelable {
                 jsonObject.has("removed")->{
                     try {
                         when{
-                            currentUserEmail == null -> {
+                            currentUserCpf == null -> {
                                 showToast("Retirada inválida: Usuário não autenticado")
                                 conn.send("Retirada inválida: Usuário não autenticado")
                             }
-                            currentUserEmail == "indefinido" -> {
+                            currentUserCpf == "indefinido" -> {
                                 showToast("Retirada inválida: Usuário indefinido")
                                 conn.send("Retirada inválida: Usuário indefinido")
                             }
                             else -> {
                                 //dbHelper?.registrarUso(currentUserEmail!!, uid, "doca")
                                 showToast("Sucesso: removido")
-                                currentUserEmail = null
+                                currentUserCpf = null
                                 sendBroadcast(Intent("com.example.com.proximo.ali.ACTION_SUCCESS_REMOVIDO"))
                             }
                         }
@@ -254,7 +254,7 @@ class WebSocketService() : Service(), Parcelable {
     }
     // Implementação da interface Parcelable
     override fun writeToParcel(parcel: Parcel, flags: Int) {
-        parcel.writeString(currentUserEmail)
+        parcel.writeString(currentUserCpf)
     }
 
     override fun describeContents(): Int {

@@ -7,23 +7,27 @@
     android:padding="16dp">
 
     <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/textInputLayoutEmail"
+        android:id="@+id/textInputLayoutCpf"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="E-mail"
+        android:hint="CPF"
         app:boxCornerRadiusBottomEnd="15dp"
         app:boxCornerRadiusBottomStart="15dp"
         app:boxCornerRadiusTopEnd="15dp"
         app:boxCornerRadiusTopStart="15dp">
 
         <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/editTextEmail"
+            android:id="@+id/editTextCpf"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="text"
             android:textSize="30sp" />
 
     </com.google.android.material.textfield.TextInputLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="16dp" />
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/textInputLayoutPassword"
