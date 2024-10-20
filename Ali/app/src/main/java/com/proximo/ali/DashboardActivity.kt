@@ -72,7 +72,7 @@ class DashboardActivity : AppCompatActivity() {
         dbHelper = DatabaseHelper(this)
         countdownTextView = findViewById(R.id.countdownTextView)
 
-
+        //TODO: Adicionar loading enquanto o delay estiver ativo
         // Adiciona um delay antes de chamar outras funções
         CoroutineScope(Dispatchers.Main).launch {
             requisitarMaquinas()

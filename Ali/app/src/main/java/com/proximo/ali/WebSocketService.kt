@@ -5,17 +5,24 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.os.*
 import android.util.Log
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
+import com.proximo.ali.Utils.getDateNow
+import com.proximo.ali.Utils.getLoanEndpoint
 import org.java_websocket.server.WebSocketServer
 import org.java_websocket.WebSocket
 import org.java_websocket.handshake.ClientHandshake
 import org.json.JSONException
 import org.json.JSONObject
 import java.net.InetSocketAddress
+import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.IOException
 
 private const val WEBSOCKET_PORT = 8080
 
@@ -87,7 +94,7 @@ class WebSocketService() : Service(), Parcelable {
 
             // Remoção
             message.startsWith("removido:") -> {
-                val uid = message.substringAfter(":").trim()
+                val rfid = message.substringAfter(":").trim()
                 when{
                     currentUserCpf == null -> {
                         showToast("Retirada inválida: Usuário não autenticado")
@@ -98,7 +105,7 @@ class WebSocketService() : Service(), Parcelable {
                         conn.send("Retirada inválida: Usuário indefinido")
                     }
                     else -> {
-                        //dbHelper?.registrarUso(currentUserEmail!!, uid, "doca")
+                        //dbHelper?.registrarUso(currentUserEmail!!, rfid, "doca")
                         showToast("Sucesso: removido")
                         currentUserCpf = null
                         sendBroadcast(Intent("com.example.com.proximo.ali.ACTION_SUCCESS_REMOVIDO"))
@@ -113,10 +120,51 @@ class WebSocketService() : Service(), Parcelable {
         }
     }
 
+    //TODO: Mover requisição para outro arquivo e pensar solução para stationId
+    private fun postLoan(context: Context, rfid: String, userId: String) {
+        val url = getLoanEndpoint(context)
+        val jsonBody = JSONObject().apply {
+            put("machineId", rfid)
+            put("startStationId", "a2b7fab1-b8f0-4c85-b5a4-c629bbf12936")
+            put("userId", userId)
+            put("start_time", getDateNow())
+        }.toString()
+
+        val mediaType = "application/json; charset=utf-8".toMediaType()
+        val requestBody = jsonBody.toRequestBody(mediaType)
+
+        val request = Request.Builder()
+            .url(url)
+            .post(requestBody)
+            .build()
+
+        val client = OkHttpClient()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                showToast("Erro na requisição: ${e.message}")
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                if (response.isSuccessful) {
+                    showToast("Sucesso: removido")
+                    currentUserCpf = null
+                    sendBroadcast(Intent("com.example.com.proximo.ali.ACTION_SUCCESS_REMOVIDO"))
+                } else {
+                    showToast("Erro na resposta: ${response.message}")
+                }
+            }
+        })
+    }
+
     // Função para lidar com JSON
     private fun receiveJsonHandler(message: String, conn: WebSocket) {
         try {
             val jsonObject = JSONObject(message)
+            val rfid = jsonObject.optString("rfid", "RFID não encontrado")
+            val userId = jsonObject.optString("userId", "Usuário não encontrado")
+            // Log the entire JSON message
+            Log.d("WebSocketService", "Received JSON: $message")
             when {
                 //requisitar maquinas presentes
                 jsonObject.has("accio_machine_response") -> {
@@ -127,21 +175,6 @@ class WebSocketService() : Service(), Parcelable {
                     dbHelper?.addLogToFile(jsonObject)
                     showToast("Log.json salvo com sucesso")
                 }
-
-                jsonObject.has("inserted") -> {
-                    try {
-                        dbHelper?.addToReturns(jsonObject)
-                        //dbHelper?.createReturnLoans() PAREI AQUI MDS DO CEU
-                        showToast("Sucesso: devolvido")
-
-                    }
-                    catch (e: Exception) {
-                        // Exibe a mensagem da exceção no Toast
-                        showToast("Erro ao registrar devolução: ${e.message}")
-                    }
-
-                }
-
 
                 jsonObject.has("removed")->{
                     try {
@@ -155,13 +188,9 @@ class WebSocketService() : Service(), Parcelable {
                                 conn.send("Retirada inválida: Usuário indefinido")
                             }
                             else -> {
-                                //dbHelper?.registrarUso(currentUserEmail!!, uid, "doca")
-                                showToast("Sucesso: removido")
-                                currentUserCpf = null
-                                sendBroadcast(Intent("com.example.com.proximo.ali.ACTION_SUCCESS_REMOVIDO"))
+                                postLoan(this, rfid, userId)
                             }
                         }
-
                     }
                     catch (e: Exception) {
 

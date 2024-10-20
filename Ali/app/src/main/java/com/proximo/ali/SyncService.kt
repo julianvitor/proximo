@@ -1,9 +1,10 @@
 package com.proximo.ali
 
+import com.proximo.ali.Utils.getApiUrl
+
 import android.annotation.SuppressLint
 import android.app.*
 import android.content.Context
-import java.util.Properties
 import android.content.Intent
 import android.os.*
 import android.widget.Toast
@@ -34,7 +35,6 @@ class SyncService : Service() {
     inner class LocalBinder : Binder() {
         fun getService(): SyncService = this@SyncService
     }
-
 
     @SuppressLint("ForegroundServiceType")
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -86,14 +86,6 @@ class SyncService : Service() {
         Handler(Looper.getMainLooper()).post {
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         }
-    }
-
-    fun getApiUrl(context: Context): String {
-        val properties = Properties()
-        context.assets.open("config.properties").use { inputStream ->
-            properties.load(inputStream)
-        }
-        return properties.getProperty("api_url")
     }
 
     private fun syncGeral(context: Context) {
